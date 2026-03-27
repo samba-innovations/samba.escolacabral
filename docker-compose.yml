@@ -1,0 +1,149 @@
+# =============================================================================
+# samba system — orquestração completa
+# Uso:
+#   cp .env.example .env && nano .env
+#   docker compose up -d --build
+# =============================================================================
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: samba_db
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-samba2025}
+      POSTGRES_DB:       ${POSTGRES_DB:-samba_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - samba_db_data:/var/lib/postgresql/data
+      - ./samba-db/init:/docker-entrypoint-initdb.d:ro
+      - ./samba-db/config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command: postgres -c hba_file=/etc/postgresql/pg_hba.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-samba_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - samba_network
+
+  innovations:
+    build:
+      context: ./samba-innovations
+      dockerfile: ../dockerfiles/Dockerfile.innovations
+    container_name: samba_innovations_app
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - samba_network
+
+  code:
+    build:
+      context: ./samba-code
+      dockerfile: Dockerfile
+    container_name: samba_code_app
+    environment:
+      DATABASE_URL: postgresql://samba_code_user:${CODE_DB_PASSWORD:-code2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - samba_network
+
+  access:
+    build:
+      context: ./samba-access
+      dockerfile: Dockerfile
+    container_name: samba_access_app
+    environment:
+      DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD:-edvance2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      URL_CODE: ${URL_CODE}
+      URL_EDVANCE: ${URL_EDVANCE}
+      URL_FLOURISH: ${URL_FLOURISH}
+    ports:
+      - "3002:3002"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - samba_network
+
+  edvance:
+    build:
+      context: ./samba-edvance
+      dockerfile: Dockerfile
+    container_name: samba_edvance_app
+    environment:
+      DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD:-edvance2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXTAUTH_SECRET: ${JWT_SECRET}
+      NEXTAUTH_URL: ${URL_EDVANCE}
+      NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./samba-edvance/public/uploads:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - samba_network
+
+  flourish:
+    build:
+      context: ./samba-flourish
+      dockerfile: ../dockerfiles/Dockerfile.flourish
+    container_name: samba_flourish_app
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+    ports:
+      - "3004:3004"
+    restart: unless-stopped
+    networks:
+      - samba_network
+
+  admin:
+    build:
+      context: ./samba-admin
+      dockerfile: ../dockerfiles/Dockerfile.admin
+    container_name: samba_admin_app
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-samba2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+    ports:
+      - "3005:3005"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - samba_network
+
+volumes:
+  samba_db_data:
+    name: samba_db_data
+
+networks:
+  samba_network:
+    name: samba_network
+    driver: bridge

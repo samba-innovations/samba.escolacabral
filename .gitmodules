@@ -1,0 +1,21 @@
+[submodule "samba-db"]
+	path = samba-db
+	url = https://github.com/samba-innovations/samba-db.git
+[submodule "samba-access"]
+	path = samba-access
+	url = https://github.com/samba-innovations/samba-access.git
+[submodule "samba-edvance"]
+	path = samba-edvance
+	url = https://github.com/samba-innovations/samba-edvance.git
+[submodule "samba-code"]
+	path = samba-code
+	url = https://github.com/samba-innovations/samba-code.git
+[submodule "samba-flourish"]
+	path = samba-flourish
+	url = https://github.com/samba-innovations/samba-flourish.git
+[submodule "samba-admin"]
+	path = samba-admin
+	url = https://github.com/samba-innovations/samba-admin.git
+[submodule "samba-innovations"]
+	path = samba-innovations
+	url = https://github.com/samba-innovations/samba-innovations.git
