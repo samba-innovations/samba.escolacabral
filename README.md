@@ -115,8 +115,8 @@ nano .env   # edite os valores
 ### 3. Suba tudo
 
 ```bash
-# Opção A — script automático
-./setup.sh
+# Opção A — script de deploy interativo (recomendado)
+bash deploy.sh
 
 # Opção B — manual
 docker compose up -d --build
@@ -126,6 +126,9 @@ docker compose up -d --build
 
 ```bash
 docker compose ps
+
+# Ou use o health check integrado
+bash deploy.sh --health
 ```
 
 ---
@@ -169,7 +172,8 @@ COOKIE_DOMAIN=.escolacabral.com.br
 samba.escolacabral/
 ├── docker-compose.yml          ← orquestração completa
 ├── .env.example                ← template de variáveis
-├── setup.sh                    ← script de instalação
+├── deploy.sh                   ← script de deploy interativo
+├── setup.sh                    ← script de instalação inicial
 ├── .gitmodules                 ← referências dos submodules
 │
 ├── dockerfiles/                ← Dockerfiles centralizados
@@ -210,6 +214,23 @@ O `samba-db` inicializa automaticamente na primeira execução com:
 | `postgres` | total | samba-admin |
 | `samba_edvance_user` | samba_school (leitura) + samba_edvance (total) | samba-edvance, samba-access |
 | `samba_code_user` | samba_school (leitura) + samba_code (total) | samba-code |
+
+### Seed inicial
+
+O sistema é pré-populado com os dados reais da **EE Prof. Christino Cabral** (PEI 2026):
+
+| Dado | Quantidade |
+|------|-----------|
+| Usuários | 44 (1 ROOT, 1 diretor, 1 vice, 5 coordenadores, 35 professores, 2 admins) |
+| Turmas | 22 (1ª–3ª série EM + 6º–9º ano EF) |
+| Disciplinas | 35 (matrizes completas PEI 2026) |
+| Habilidades BNCC | ~1.000+ (Ensino Fundamental e Médio) |
+
+> As senhas do seed são armazenadas como **hashes bcrypt** (cost=12). Nenhum plaintext consta no repositório.
+
+**Fluxo de primeiro acesso:**
+- ROOT → acesso permanente, senha não expira
+- Demais usuários → obrigados a trocar a senha no primeiro login (`must_change_password = true`)
 
 ---
 
@@ -265,6 +286,33 @@ git push
 
 ---
 
+## Script de Deploy
+
+O `deploy.sh` é um instalador interativo para uso da equipe de desenvolvimento. Requer autenticação por senha antes de executar qualquer ação.
+
+```bash
+bash deploy.sh           # deploy completo
+bash deploy.sh --health  # apenas health check
+```
+
+**Ações disponíveis (cada uma confirmada individualmente):**
+
+| Ação | Descrição |
+|------|-----------|
+| `git pull` | Atualiza o código do repositório |
+| Submodules | Atualiza todos os submódulos |
+| `down -v` | Recria o banco do zero ⚠️ apaga dados |
+| `--build` | Rebuild das imagens Docker |
+| Restart | Reinicia serviços sem rebuild |
+
+**Health checks automáticos após o deploy:**
+
+- Containers: todos os 7 serviços em execução, nenhum em restart loop
+- Banco: conexão, extensões, schemas, integridade do seed (contagens esperadas)
+- HTTP: cada aplicação respondendo na porta correta (200/3xx)
+
+---
+
 ## Deploy em Produção
 
 O ambiente de produção roda em um VPS **Contabo** com:
@@ -304,6 +352,8 @@ certbot --nginx -d edvance.escolacabral.com.br --agree-tos
 - Cookies `httpOnly`, `secure`, com `sameSite: lax`
 - Tokens SSO de uso único com expiração
 - `.env` sempre fora do controle de versão
+- Senhas do seed armazenadas como **hashes bcrypt** (cost=12) — nenhum plaintext no repositório
+- Script de deploy protegido por senha (hash SHA-256, sem plaintext)
 
 ---
 
