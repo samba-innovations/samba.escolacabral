@@ -14,8 +14,7 @@ services:
       POSTGRES_USER:     ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-samba2025}
       POSTGRES_DB:       ${POSTGRES_DB:-samba_db}
-    ports:
-      - "5433:5432"
+    # porta não exposta externamente — acesso apenas pela rede interna dos containers
     volumes:
       - samba_db_data:/var/lib/postgresql/data
       - ./samba-db/init:/docker-entrypoint-initdb.d:ro
