@@ -1,6 +1,6 @@
 [submodule "samba-db"]
 	path = samba-db
-	url = https://github.com/samba-innovations/samba-db.git
+	url = https://github.com/vinicius-SambaCode/samba-db.git
 [submodule "samba-access"]
 	path = samba-access
 	url = https://github.com/samba-innovations/samba-access.git
