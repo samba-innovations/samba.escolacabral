@@ -489,6 +489,8 @@ run_health_checks() {
         code=$(http_status "$port")
         if [[ "$code" =~ ^(200|301|302|303|307|308)$ ]]; then
             hc_ok "${name} (porta ${port}) respondendo — HTTP ${code}"
+        elif [ "$code" = "404" ] && [ "$port" = "3005" ]; then
+            hc_ok "${name} (porta ${port}) respondendo — HTTP 404 (sem rota na raiz, normal)"
         elif [ "$code" = "000" ]; then
             hc_fail "${name} (porta ${port}) sem resposta — container pode estar iniciando"
         else
