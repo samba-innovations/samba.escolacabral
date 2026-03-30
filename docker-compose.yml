@@ -45,6 +45,8 @@ services:
     build:
       context: ./samba-code
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
     container_name: samba_code_app
     environment:
       DATABASE_URL: postgresql://samba_code_user:${CODE_DB_PASSWORD:-code2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
@@ -87,6 +89,8 @@ services:
     build:
       context: ./samba-edvance
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
     container_name: samba_edvance_app
     environment:
       DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD:-edvance2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
@@ -112,6 +116,8 @@ services:
     build:
       context: ./samba-flourish
       dockerfile: ../dockerfiles/Dockerfile.flourish
+      args:
+        NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
     container_name: samba_flourish_app
     environment:
       DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD:-edvance2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
@@ -132,6 +138,8 @@ services:
     build:
       context: ./samba-admin
       dockerfile: ../dockerfiles/Dockerfile.admin
+      args:
+        NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
     container_name: samba_admin_app
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-samba2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
