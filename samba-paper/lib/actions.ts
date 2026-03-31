@@ -62,7 +62,7 @@ export async function saveDocument(id: number, content: Record<string, unknown>)
 
   await prisma.document.update({
     where: { id },
-    data: { content, updatedAt: new Date() },
+    data: { content: content as object, updatedAt: new Date() },
   });
 
   revalidatePath(`/dashboard/documentos/${id}`);
