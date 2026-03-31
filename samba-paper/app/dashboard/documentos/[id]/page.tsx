@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getDocument, getMyClasses, getDisciplines, getAeeStudents } from "@/lib/actions";
 import { DocumentoEditor } from "@/components/dashboard/documentos/DocumentoEditor";
-import { ArrowLeft } from "lucide-react";
+import { Icon } from "@iconify/react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/documentos" className="p-2 rounded-xl hover:bg-muted transition-colors">
-          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+          <Icon icon="line-md:arrow-left" width={16} height={16} className="text-muted-foreground" />
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg font-black text-foreground truncate">{doc.title}</h1>

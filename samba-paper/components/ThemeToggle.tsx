@@ -1,8 +1,8 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { AnimatedIcon } from "./AnimatedIcon";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -15,10 +15,14 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors outline-none"
+      className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors outline-none flex items-center justify-center"
       aria-label="Alternar tema"
     >
-      {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+      <AnimatedIcon
+        icon={theme === "dark" ? "line-md:sun-rising-loop" : "line-md:moon-rising-filled-loop"}
+        width={20}
+        height={20}
+      />
     </button>
   );
 }

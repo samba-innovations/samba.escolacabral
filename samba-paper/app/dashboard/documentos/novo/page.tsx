@@ -1,5 +1,5 @@
 import { createDocument } from "@/lib/actions";
-import { ArrowLeft } from "lucide-react";
+import { Icon } from "@iconify/react";
 import Link from "next/link";
 
 export const metadata = { title: "Novo Documento" };
@@ -25,7 +25,7 @@ export default async function NovoDocumentoPage({
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/documentos" className="p-2 rounded-xl hover:bg-muted transition-colors">
-          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+          <Icon icon="line-md:arrow-left" width={16} height={16} className="text-muted-foreground" />
         </Link>
         <h1 className="text-xl font-black text-foreground">Novo Documento</h1>
       </div>

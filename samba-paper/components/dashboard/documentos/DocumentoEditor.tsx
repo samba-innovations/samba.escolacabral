@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { saveDocument } from "@/lib/actions";
 import { toast } from "sonner";
-import { Save, FileDown, Loader2 } from "lucide-react";
+import { Icon } from "@iconify/react";
 
 interface DocData {
   id: number;
@@ -642,7 +642,7 @@ export function DocumentoEditor({ doc, userName, classes, disciplines, students 
           disabled={isPending || isGenerating}
           className="flex items-center justify-center gap-2 bg-muted hover:bg-muted/80 text-foreground font-bold px-6 py-3 rounded-2xl transition-colors disabled:opacity-50"
         >
-          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <Icon icon={isPending ? "line-md:loading-loop" : "line-md:uploading-loop"} width={16} height={16} />
           Salvar rascunho
         </button>
 
@@ -651,7 +651,7 @@ export function DocumentoEditor({ doc, userName, classes, disciplines, students 
           disabled={isPending || isGenerating}
           className="flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-3 rounded-2xl transition-colors disabled:opacity-50"
         >
-          {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+          <Icon icon={isGenerating ? "line-md:loading-loop" : "line-md:file-download"} width={16} height={16} />
           {isGenerating ? "Gerando PDF..." : "Gerar PDF"}
         </button>
 
@@ -662,7 +662,7 @@ export function DocumentoEditor({ doc, userName, classes, disciplines, students 
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-black font-bold px-6 py-3 rounded-2xl transition-colors"
           >
-            <FileDown className="w-4 h-4" />
+            <Icon icon="line-md:file-download" width={16} height={16} />
             Baixar PDF
           </a>
         )}

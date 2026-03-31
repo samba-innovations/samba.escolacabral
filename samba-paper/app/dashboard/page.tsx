@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { getMyDocuments } from "@/lib/actions";
-import { FileText, PlusCircle, Clock, CheckCircle2 } from "lucide-react";
+import { Icon } from "@iconify/react";
 import Link from "next/link";
 
 export const metadata = { title: "Visão Geral" };
@@ -38,9 +38,9 @@ export default async function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total de documentos", value: total, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
-          { label: "Rascunhos", value: drafts, icon: Clock, color: "text-secondary", bg: "bg-secondary/10" },
-          { label: "Finalizados", value: finals, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+          { label: "Total de documentos", value: total, icon: "line-md:document", color: "text-primary", bg: "bg-primary/10" },
+          { label: "Rascunhos", value: drafts, icon: "line-md:watch", color: "text-secondary", bg: "bg-secondary/10" },
+          { label: "Finalizados", value: finals, icon: "line-md:confirm-circle", color: "text-emerald-500", bg: "bg-emerald-500/10" },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-border/50 rounded-2xl p-5">
             <div className="flex items-start justify-between">
@@ -48,8 +48,8 @@ export default async function DashboardPage() {
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">{s.label}</p>
                 <p className="text-3xl font-black text-foreground">{s.value}</p>
               </div>
-              <div className={`${s.bg} p-3 rounded-xl`}>
-                <s.icon className={`w-5 h-5 ${s.color}`} />
+              <div className={`${s.bg} p-3 rounded-xl flex items-center justify-center`}>
+                <Icon icon={s.icon} width={20} height={20} className={s.color} />
               </div>
             </div>
           </div>
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
               href={`/dashboard/documentos/novo?type=${type}`}
               className="bg-card border border-border/50 hover:border-primary/50 rounded-2xl p-4 text-sm font-semibold text-foreground hover:text-primary transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 flex items-center gap-2"
             >
-              <PlusCircle className="w-4 h-4 shrink-0 text-primary" />
+              <Icon icon="line-md:plus-circle" width={16} height={16} className="shrink-0 text-primary" />
               {label}
             </Link>
           ))}
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
                 className="flex items-center gap-4 px-6 py-4 hover:bg-muted/20 transition-colors"
               >
                 <div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
-                  <FileText className="w-4 h-4 text-secondary" />
+                  <Icon icon="line-md:document" width={16} height={16} className="text-secondary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-foreground text-sm truncate">{doc.title}</p>

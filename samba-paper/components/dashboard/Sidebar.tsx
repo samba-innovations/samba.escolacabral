@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, LayoutDashboard, LogOut, PlusCircle } from "lucide-react";
 import { clsx } from "clsx";
+import { AnimatedIcon } from "@/components/AnimatedIcon";
 
 const NAV = [
-  { href: "/dashboard",            label: "Visão Geral",     icon: LayoutDashboard },
-  { href: "/dashboard/documentos", label: "Meus Documentos", icon: FileText },
-  { href: "/dashboard/documentos/novo", label: "Novo Documento", icon: PlusCircle },
+  { href: "/dashboard",            label: "Visão Geral",     icon: "line-md:home-md" },
+  { href: "/dashboard/documentos", label: "Meus Documentos", icon: "line-md:document" },
+  { href: "/dashboard/documentos/novo", label: "Novo Documento", icon: "line-md:plus-circle" },
 ];
 
 export function Sidebar() {
@@ -18,7 +18,7 @@ export function Sidebar() {
       <div className="p-6 border-b border-border/50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-            <FileText className="w-4 h-4 text-black" />
+            <AnimatedIcon icon="line-md:document" width={16} height={16} className="text-black" />
           </div>
           <span className="font-black text-foreground">samba <span className="text-primary">paper</span></span>
         </div>
@@ -37,7 +37,7 @@ export function Sidebar() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
-            <item.icon className="w-4 h-4" />
+            <AnimatedIcon icon={item.icon} width={16} height={16} />
             {item.label}
           </Link>
         ))}
@@ -49,7 +49,7 @@ export function Sidebar() {
           href="/auth/signout"
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
         >
-          <LogOut className="w-4 h-4" />
+          <AnimatedIcon icon="line-md:logout" width={16} height={16} />
           Sair do Sistema
         </a>
       </div>

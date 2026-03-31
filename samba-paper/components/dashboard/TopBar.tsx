@@ -1,5 +1,5 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { LogOut } from "lucide-react";
+import { Icon } from "@iconify/react";
 import Image from "next/image";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -29,9 +29,9 @@ export function TopBar({ userName, role }: { userName: string; role: string }) {
           <button
             type="submit"
             title="Sair do sistema"
-            className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+            className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all flex items-center justify-center"
           >
-            <LogOut size={17} />
+            <Icon icon="line-md:logout" width={17} height={17} />
           </button>
         </form>
         <div className="flex items-center gap-2">

@@ -3,8 +3,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-primary: #FCE31D;
-  --color-secondary: #b64c96;
+  --color-primary: #b64c96;
+  --color-secondary: #FCE31D;
   --color-background: var(--bg-color);
   --color-foreground: var(--fg-color);
   --color-muted: var(--muted-color);
@@ -55,6 +55,11 @@
 }
 
 @layer utilities {
+  /* Pause all CSS animations inside an icon until it's activated */
+  [data-icon-active="false"] svg * {
+    animation-play-state: paused !important;
+  }
+
   .dashboard-glass {
     background-color: var(--dashboard-glass-bg);
     backdrop-filter: blur(12px);
