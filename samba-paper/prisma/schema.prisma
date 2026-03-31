@@ -49,9 +49,9 @@ model Role {
 }
 
 model SchoolGrade {
-  id           Int           @id @default(autoincrement())
-  level        String        @db.VarChar(20)
-  yearNumber   Int           @map("year_number")
+  id           Int            @id @default(autoincrement())
+  level        EducationLevel
+  yearNumber   Int            @map("year_number")
   label        String        @db.VarChar(16)
   schoolClasses SchoolClass[]
 
@@ -101,6 +101,14 @@ model Student {
   schoolClass SchoolClass? @relation(fields: [classId], references: [id])
 
   @@map("students")
+  @@schema("samba_school")
+}
+
+enum EducationLevel {
+  fundamental
+  medio
+
+  @@map("education_level")
   @@schema("samba_school")
 }
 
