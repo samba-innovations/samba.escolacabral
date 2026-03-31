@@ -118,3 +118,36 @@ export async function getAeeStudents() {
     orderBy: { name: "asc" },
   });
 }
+
+export async function getAulasCurriculo(
+  ciclo: string,
+  serie: string,
+  disciplinaNome: string,
+  bimestre: number
+) {
+  return prisma.aula.findMany({
+    where: { ciclo, serie, disciplinaNome, bimestre },
+    orderBy: { aulaNum: "asc" },
+    select: {
+      id: true, aulaNum: true, titulo: true, eixo: true,
+      unidadeTematica: true, habilidadeCodigo: true, habilidadeTexto: true,
+      objetoConhecimento: true, conteudo: true, objetivos: true, bloco: true,
+    },
+  });
+}
+
+export async function getDisciplinasByProfesor() {
+  const session = await getSession();
+  if (!session) return [];
+  // Returns disciplines assigned to this teacher via teacher_assignments (samba_school)
+  const assignments = await prisma.teacherAssignment.findMany({
+    where: { userId: session.id },
+    select: { disciplineId: true },
+    distinct: ["disciplineId"],
+  });
+  if (assignments.length === 0) return prisma.discipline.findMany({ orderBy: { name: "asc" } });
+  return prisma.discipline.findMany({
+    where: { id: { in: assignments.map((a) => a.disciplineId) } },
+    orderBy: { name: "asc" },
+  });
+}
