@@ -4,7 +4,7 @@
 # Uso: bash deploy.sh
 # =============================================================================
 
-set -uo pipefail
+set -euo pipefail
 
 # -----------------------------------------------------------------------------
 # Cores e estilos
@@ -345,6 +345,9 @@ wait_for_db() {
 }
 
 run_health_checks() {
+    # Reinicia contadores (evita acumulação em chamadas repetidas)
+    HC_TOTAL=0; HC_PASS=0; HC_FAIL=0; HC_WARN=0
+
     # Carrega variáveis do .env para usar POSTGRES_USER etc.
     set -a
     # shellcheck source=.env
@@ -522,6 +525,14 @@ run_health_checks() {
 
 clear_screen
 print_header
+
+# Modo --health standalone (sem deploy)
+if [[ "${1:-}" == "--health" ]]; then
+    verify_password
+    run_health_checks
+    exit 0
+fi
+
 verify_password
 check_environment
 select_actions
@@ -536,12 +547,4 @@ else
     divider
     echo -e "\n  ${GREEN}${BOLD}Deploy concluído.${NC}\n"
     echo -e "  ${GRAY}Para rodar os checks depois:${NC}  ${CYAN}bash deploy.sh --health${NC}\n"
-fi
-
-# Modo --health standalone (sem deploy)
-if [[ "${1:-}" == "--health" ]]; then
-    clear_screen
-    print_header
-    verify_password
-    run_health_checks
 fi
