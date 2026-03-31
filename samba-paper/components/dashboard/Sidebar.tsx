@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
-import { AnimatedIcon } from "@/components/AnimatedIcon";
+import { Icon } from "@iconify/react";
 
 const NAV = [
   { href: "/dashboard",            label: "Visão Geral",     icon: "line-md:home-md" },
@@ -18,7 +18,7 @@ export function Sidebar() {
       <div className="p-6 border-b border-border/50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-            <AnimatedIcon icon="line-md:document" width={16} height={16} className="text-black" />
+            <Icon icon="line-md:document" width={16} height={16} className="text-black" />
           </div>
           <span className="font-black text-foreground">samba <span className="text-primary">paper</span></span>
         </div>
@@ -37,7 +37,7 @@ export function Sidebar() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
-            <AnimatedIcon icon={item.icon} width={16} height={16} />
+            <Icon icon={item.icon} width={16} height={16} />
             {item.label}
           </Link>
         ))}
@@ -49,7 +49,7 @@ export function Sidebar() {
           href="/auth/signout"
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
         >
-          <AnimatedIcon icon="line-md:logout" width={16} height={16} />
+          <Icon icon="line-md:logout" width={16} height={16} />
           Sair do Sistema
         </a>
       </div>
