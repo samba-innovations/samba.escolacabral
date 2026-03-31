@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-primary: #FCE31D;
+  --color-secondary: #b64c96;
+  --color-background: var(--bg-color);
+  --color-foreground: var(--fg-color);
+  --color-muted: var(--muted-color);
+  --color-muted-foreground: var(--muted-fg-color);
+  --color-border: var(--border-color);
+  --color-card: var(--card-color);
+  --color-destructive: #ef4444;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+}
+
+:root {
+  --bg-color: #faf8ff;
+  --fg-color: #1a0a1a;
+  --muted-color: #f0e8f5;
+  --muted-fg-color: #7a4a7a;
+  --border-color: #e0c8e8;
+  --card-color: #ffffff;
+  --dashboard-glass-bg: rgba(255, 255, 255, 0.75);
+}
+
+.dark {
+  --bg-color: #0f0714;
+  --fg-color: #f5f0ff;
+  --muted-color: #1a0e20;
+  --muted-fg-color: #a07ab0;
+  --border-color: #2a1430;
+  --card-color: #150a1e;
+  --dashboard-glass-bg: rgba(21, 10, 30, 0.7);
+}
+
+@layer base {
+  html, body {
+    background-color: var(--bg-color);
+    color: var(--fg-color);
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+
+  ::selection {
+    background-color: #FCE31D;
+    color: #1a0a1a;
+  }
+}
+
+@layer utilities {
+  .dashboard-glass {
+    background-color: var(--dashboard-glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-fg-color);
+  }
+}

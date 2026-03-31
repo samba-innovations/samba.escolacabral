@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -c \"import bcrypt; h1=bcrypt.hashpw\\(b''Root@Cabral2025'', bcrypt.gensalt\\(12\\)\\).decode\\(\\); h2=bcrypt.hashpw\\(b''Acesso@123'', bcrypt.gensalt\\(12\\)\\).decode\\(\\); print\\(''ROOT|||''+h1\\); print\\(''DEFAULT|||''+h2\\)\")",
+      "Bash(py -c \"import bcrypt; h=bcrypt.hashpw\\(b''R7D46S*98/4pwd'', bcrypt.gensalt\\(12\\)\\).decode\\(\\); print\\(h\\)\")",
+      "Bash(chmod +x c:/Users/Vinicius-SambaCode/Documents/projetos/samba.escolacabral/deploy.sh)",
+      "Bash(git push:*)",
+      "Bash(grep -E \"\\\\.ts$|\\\\.tsx$\")",
+      "Bash(git -C samba-access add src/lib/db.ts)",
+      "Bash(git -C samba-access commit -m \"fix: buildUrl sem new URL\\(\\) para suportar senhas com caracteres especiais\")",
+      "Bash(git -C samba-access push origin main)",
+      "Bash(git -C samba-code add src/lib/db.ts)",
+      "Bash(git -C samba-code commit -m \"fix: buildUrl sem new URL\\(\\) para suportar senhas com caracteres especiais\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(curl -s --max-time 3 http://45.205.1.19)"
+    ]
+  }
+}

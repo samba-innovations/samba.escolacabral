@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import bcrypt; print\\(''ok''\\)\")",
+      "Bash(python -c \"import bcrypt; print\\(''ok''\\)\")",
+      "Bash(where python3:*)",
+      "Bash(py --version)",
+      "Bash(C:UsersVinicius-SambaCodeAppDataLocalProgramsPythonPython312python.exe -c \"import bcrypt; h1=bcrypt.hashpw\\(b''Root@Cabral2025'', bcrypt.gensalt\\(12\\)\\).decode\\(\\); h2=bcrypt.hashpw\\(b''Acesso@123'', bcrypt.gensalt\\(12\\)\\).decode\\(\\); print\\(''ROOT|||''+h1\\); print\\(''DEFAULT|||''+h2\\)\")",
+      "Bash(whois 45.205.1.19)",
+      "Read(//c/Users/Vinicius-SambaCode/.claude/projects/c--Users-Vinicius-SambaCode-Documents-projetos-samba-escolacabral/memory/**)",
+      "Bash(mkdir -p \"c:/Users/Vinicius-SambaCode/Documents/projetos/samba.escolacabral/samba-paper/app/dashboard/documentos/[id]\")",
+      "Bash(mkdir -p \"c:/Users/Vinicius-SambaCode/Documents/projetos/samba.escolacabral/samba-paper/app/api/documentos/[id]/pdf\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Vinicius-SambaCode\\Documents\\projetos\\samba.escolacabral\\samba-paper\\app\\api\\documentos\\[id]\\pdf"
+    ]
+  }
+}

@@ -356,7 +356,7 @@ run_health_checks() {
     # ── 1. Containers ─────────────────────────────────────────────────────────
     hc_title "1. Containers"
 
-    local services=("samba_db" "samba_code_app" "samba_access_app" "samba_edvance_app" "samba_admin_app" "samba_flourish_app" "samba_innovations_app")
+    local services=("samba_db" "samba_code_app" "samba_access_app" "samba_edvance_app" "samba_admin_app" "samba_flourish_app" "samba_innovations_app" "samba_paper_app")
     for svc in "${services[@]}"; do
         if container_running "$svc"; then
             hc_ok "Container ${svc} está rodando"
@@ -394,7 +394,7 @@ run_health_checks() {
         done
 
         # Schemas
-        for schema in samba_school samba_edvance samba_code; do
+        for schema in samba_school samba_edvance samba_code samba_paper; do
             local schema_ok
             schema_ok=$(db_query "SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name='${schema}';")
             if [ "$schema_ok" = "1" ]; then
@@ -481,6 +481,7 @@ run_health_checks() {
         [3003]="edvance"
         [3004]="flourish"
         [3005]="admin"
+        [3006]="paper"
     )
 
     for port in "${!APPS[@]}"; do

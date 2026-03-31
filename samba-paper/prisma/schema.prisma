@@ -1,0 +1,145 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["samba_school", "samba_paper"]
+}
+
+// ── samba_school (read-only) ─────────────────────────────────────────────────
+
+model User {
+  id                 Int        @id @default(autoincrement())
+  name               String     @db.VarChar(100)
+  email              String     @unique @db.VarChar(150)
+  passwordHash       String     @map("password_hash") @db.VarChar(255)
+  isActive           Boolean    @default(true) @map("is_active")
+  mustChangePassword Boolean    @default(false) @map("must_change_password")
+  avatarUrl          String?    @map("avatar_url")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  userRoles          UserRole[]
+  documents          Document[]
+
+  @@map("users")
+  @@schema("samba_school")
+}
+
+model UserRole {
+  userId Int  @map("user_id")
+  roleId Int  @map("role_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+  @@schema("samba_school")
+}
+
+model Role {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(50)
+  userRoles UserRole[]
+
+  @@map("roles")
+  @@schema("samba_school")
+}
+
+model SchoolGrade {
+  id           Int           @id @default(autoincrement())
+  level        String        @db.VarChar(20)
+  yearNumber   Int           @map("year_number")
+  label        String        @db.VarChar(16)
+  schoolClasses SchoolClass[]
+
+  @@unique([level, yearNumber])
+  @@map("school_grades")
+  @@schema("samba_school")
+}
+
+model ClassSection {
+  id            Int           @id @default(autoincrement())
+  label         String        @unique @db.VarChar(8)
+  schoolClasses SchoolClass[]
+
+  @@map("class_sections")
+  @@schema("samba_school")
+}
+
+model SchoolClass {
+  id         Int          @id @default(autoincrement())
+  gradeId    Int          @map("grade_id")
+  sectionId  Int          @map("section_id")
+  name       String       @db.VarChar(32)
+  grade      SchoolGrade  @relation(fields: [gradeId], references: [id])
+  section    ClassSection @relation(fields: [sectionId], references: [id])
+  students   Student[]
+
+  @@unique([gradeId, sectionId])
+  @@map("school_classes")
+  @@schema("samba_school")
+}
+
+model Discipline {
+  id             Int    @id @default(autoincrement())
+  name           String @db.VarChar(150)
+  disciplineType String @default("base_comum") @map("discipline_type") @db.VarChar(30)
+
+  @@map("disciplines")
+  @@schema("samba_school")
+}
+
+model Student {
+  id          Int          @id @default(autoincrement())
+  ra          String       @unique @db.VarChar(32)
+  name        String       @db.VarChar(160)
+  classId     Int?         @map("class_id")
+  isActive    Boolean      @default(true) @map("is_active")
+  schoolClass SchoolClass? @relation(fields: [classId], references: [id])
+
+  @@map("students")
+  @@schema("samba_school")
+}
+
+// ── samba_paper ──────────────────────────────────────────────────────────────
+
+enum DocumentType {
+  plano_de_aula
+  guia_de_aprendizagem
+  pei
+  plano_de_eletiva
+  plano_ema
+  projeto
+  pdi
+
+  @@schema("samba_paper")
+}
+
+enum DocumentStatus {
+  draft
+  final
+
+  @@schema("samba_paper")
+}
+
+model Document {
+  id        Int            @id @default(autoincrement())
+  userId    Int            @map("user_id")
+  type      DocumentType
+  title     String         @db.VarChar(300)
+  content   Json           @default("{}")
+  pdfPath   String?        @map("pdf_path") @db.VarChar(500)
+  status    DocumentStatus @default(draft)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at")
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@map("documents")
+  @@schema("samba_paper")
+}

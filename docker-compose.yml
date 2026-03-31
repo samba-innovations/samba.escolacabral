@@ -76,6 +76,7 @@ services:
       URL_EDVANCE: ${URL_EDVANCE}
       URL_FLOURISH: ${URL_FLOURISH}
       URL_ADMIN: ${URL_ADMIN}
+      URL_PAPER: ${URL_PAPER}
     ports:
       - "3002:3002"
     depends_on:
@@ -156,9 +157,34 @@ services:
     networks:
       - samba_network
 
+  paper:
+    build:
+      context: ./samba-paper
+      dockerfile: Dockerfile
+    container_name: samba_paper_app
+    environment:
+      DATABASE_URL: postgresql://samba_paper_user:${PAPER_DB_PASSWORD:-paper2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      ACCESS_INTERNAL_URL: http://samba_access_app:3002
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      STORAGE_DIR: /app/storage
+    ports:
+      - "3006:3006"
+    volumes:
+      - paper_storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - samba_network
+
 volumes:
   samba_db_data:
     name: samba_db_data
+  paper_storage:
+    name: paper_storage
 
 networks:
   samba_network:
