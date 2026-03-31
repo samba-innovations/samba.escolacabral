@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveDocument } from "@/lib/actions";
+import { saveDocument, getAulasCurriculo } from "@/lib/actions";
 import { toast } from "sonner";
 import { Icon } from "@iconify/react";
 
@@ -14,10 +14,24 @@ interface DocData {
   status: string;
 }
 
+type AulaRecord = {
+  id: number;
+  aulaNum: number;
+  titulo: string;
+  eixo: string | null;
+  unidadeTematica: string | null;
+  habilidadeCodigo: string | null;
+  habilidadeTexto: string | null;
+  objetoConhecimento: string | null;
+  conteudo: string | null;
+  objetivos: string | null;
+  bloco: string | null;
+};
+
 interface Props {
   doc: DocData;
   userName: string;
-  classes: { id: number; name: string; grade: string; section: string }[];
+  classes: { id: number; name: string; grade: string; section: string; ciclo: string; serie: string }[];
   disciplines: { id: number; name: string; type: string }[];
   students: { id: number; name: string; ra: string; className: string }[];
 }
@@ -131,6 +145,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 // ─── Form fields per document type ───────────────────────────────────────────
 
+const BIMESTRES_OPTS = [
+  { value: "1", label: "1º Bimestre" },
+  { value: "2", label: "2º Bimestre" },
+  { value: "3", label: "3º Bimestre" },
+  { value: "4", label: "4º Bimestre" },
+];
+
 function PlanoDeAulaForm({
   c,
   set,
@@ -142,7 +163,38 @@ function PlanoDeAulaForm({
   classes: Props["classes"];
   disciplines: Props["disciplines"];
 }) {
-  const BIMESTRES = ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre"];
+  const [aulas, setAulas] = useState<AulaRecord[]>([]);
+  const [loadingAulas, setLoadingAulas] = useState(false);
+  const [aulaId, setAulaId] = useState<number | null>(null);
+
+  const selectedClass = classes.find((cl) => cl.name === c.turma);
+
+  async function loadAulas(turmaName: string, disciplina: string, bimStr: string) {
+    const cl = classes.find((x) => x.name === turmaName);
+    if (!cl || !disciplina || !bimStr) { setAulas([]); return; }
+    setLoadingAulas(true);
+    try {
+      const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplina, Number(bimStr));
+      setAulas(rows);
+    } finally {
+      setLoadingAulas(false);
+    }
+  }
+
+  function pickAula(id: number) {
+    const a = aulas.find((x) => x.id === id);
+    if (!a) return;
+    setAulaId(id);
+    set("aula_id", String(id));
+    set("aula_num", String(a.aulaNum));
+    set("tema", a.titulo);
+    set("eixo", a.eixo ?? "");
+    set("unidade_tematica", a.unidadeTematica ?? "");
+    set("habilidades", [a.habilidadeCodigo, a.habilidadeTexto].filter(Boolean).join("\n"));
+    set("objeto_conhecimento", a.objetoConhecimento ?? "");
+    set("conteudo", a.conteudo ?? "");
+    set("objetivo_geral", a.objetivos ?? "");
+  }
 
   return (
     <>
@@ -152,7 +204,10 @@ function PlanoDeAulaForm({
             <SelectInput
               name="turma"
               value={c.turma ?? ""}
-              onChange={(v) => set("turma", v)}
+              onChange={(v) => {
+                set("turma", v);
+                loadAulas(v, c.disciplina ?? "", c.bimestre ?? "");
+              }}
               options={classes.map((cl) => ({ value: cl.name, label: cl.name }))}
               placeholder="Selecione a turma"
             />
@@ -161,7 +216,10 @@ function PlanoDeAulaForm({
             <SelectInput
               name="disciplina"
               value={c.disciplina ?? ""}
-              onChange={(v) => set("disciplina", v)}
+              onChange={(v) => {
+                set("disciplina", v);
+                loadAulas(c.turma ?? "", v, c.bimestre ?? "");
+              }}
               options={disciplines.map((d) => ({ value: d.name, label: d.name }))}
               placeholder="Selecione a disciplina"
             />
@@ -170,8 +228,11 @@ function PlanoDeAulaForm({
             <SelectInput
               name="bimestre"
               value={c.bimestre ?? ""}
-              onChange={(v) => set("bimestre", v)}
-              options={BIMESTRES.map((b) => ({ value: b, label: b }))}
+              onChange={(v) => {
+                set("bimestre", v);
+                loadAulas(c.turma ?? "", c.disciplina ?? "", v);
+              }}
+              options={BIMESTRES_OPTS}
               placeholder="Selecione o bimestre"
             />
           </Field>
@@ -179,6 +240,42 @@ function PlanoDeAulaForm({
             <TextInput name="data" value={c.data ?? ""} onChange={(v) => set("data", v)} placeholder="dd/mm/aaaa" />
           </Field>
         </div>
+
+        {/* Aula selector — only shows when curriculum loaded */}
+        {(loadingAulas || aulas.length > 0) && (
+          <Field label="Selecione a aula do currículo" hint={selectedClass ? `${selectedClass.ciclo === 'fundamental' ? 'Anos Finais' : 'Ensino Médio'} — ${selectedClass.grade}` : undefined}>
+            {loadingAulas ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
+                <Icon icon="line-md:loading-loop" width={16} height={16} />
+                Carregando aulas...
+              </div>
+            ) : (
+              <div className="grid gap-2 max-h-72 overflow-y-auto pr-1">
+                {aulas.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => pickAula(a.id)}
+                    className={`text-left border rounded-xl px-4 py-3 transition-all hover:border-primary/60 ${
+                      aulaId === a.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border/50 bg-background"
+                    }`}
+                  >
+                    <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">
+                      Aula {a.aulaNum}
+                    </span>
+                    <p className="text-sm font-bold text-foreground mt-0.5">{a.titulo}</p>
+                    {a.unidadeTematica && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{a.unidadeTematica}</p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </Field>
+        )}
+
         <Field label="Tema / Título da aula">
           <TextInput name="tema" value={c.tema ?? ""} onChange={(v) => set("tema", v)} placeholder="Ex: Funções do 1º Grau" />
         </Field>
@@ -188,17 +285,25 @@ function PlanoDeAulaForm({
         <Field label="Objetivo geral">
           <TextArea name="objetivo_geral" value={c.objetivo_geral ?? ""} onChange={(v) => set("objetivo_geral", v)} placeholder="O que o aluno deverá ser capaz de fazer ao final da aula?" rows={3} />
         </Field>
-        <Field label="Habilidades BNCC / Currículo Paulista" hint="Informe os códigos e descrições (ex: EF09MA06)">
+        <Field label="Habilidades BNCC / Currículo Paulista" hint="Pré-preenchido ao selecionar a aula do currículo">
           <TextArea name="habilidades" value={c.habilidades ?? ""} onChange={(v) => set("habilidades", v)} placeholder="(EF09MA06) Compreender as funções como relações de dependência..." rows={4} />
         </Field>
+        {c.objeto_conhecimento && (
+          <Field label="Objeto de conhecimento">
+            <TextInput name="objeto_conhecimento" value={c.objeto_conhecimento ?? ""} onChange={(v) => set("objeto_conhecimento", v)} placeholder="" />
+          </Field>
+        )}
       </Section>
 
-      <Section title="Desenvolvimento da Aula">
+      <Section title="Conteúdo e Desenvolvimento">
+        <Field label="Conteúdo" hint="Pré-preenchido ao selecionar a aula">
+          <TextArea name="conteudo" value={c.conteudo ?? ""} onChange={(v) => set("conteudo", v)} placeholder="Conteúdos a serem trabalhados..." rows={4} />
+        </Field>
         <Field label="Momento inicial (Motivação / Diagnóstico)" hint="Aproximadamente 10–15 min">
-          <TextArea name="desenvolvimento_inicial" value={c.desenvolvimento_inicial ?? ""} onChange={(v) => set("desenvolvimento_inicial", v)} placeholder="Como a aula será iniciada? Qual estratégia de engajamento?" rows={4} />
+          <TextArea name="desenvolvimento_inicial" value={c.desenvolvimento_inicial ?? ""} onChange={(v) => set("desenvolvimento_inicial", v)} placeholder="Como a aula será iniciada? Qual estratégia de engajamento?" rows={3} />
         </Field>
         <Field label="Desenvolvimento" hint="Atividade principal — Aproximadamente 25–30 min">
-          <TextArea name="desenvolvimento_principal" value={c.desenvolvimento_principal ?? ""} onChange={(v) => set("desenvolvimento_principal", v)} placeholder="Descrição detalhada das atividades de ensino e aprendizagem" rows={6} />
+          <TextArea name="desenvolvimento_principal" value={c.desenvolvimento_principal ?? ""} onChange={(v) => set("desenvolvimento_principal", v)} placeholder="Descrição detalhada das atividades de ensino e aprendizagem" rows={5} />
         </Field>
         <Field label="Fechamento / Sistematização" hint="Aproximadamente 10 min">
           <TextArea name="desenvolvimento_fechamento" value={c.desenvolvimento_fechamento ?? ""} onChange={(v) => set("desenvolvimento_fechamento", v)} placeholder="Como a aula será encerrada? Síntese dos conteúdos?" rows={3} />
@@ -228,24 +333,51 @@ function GuiaAprendizagemForm({
   classes: Props["classes"];
   disciplines: Props["disciplines"];
 }) {
-  const BIMESTRES = ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre"];
+  const [loadingAulas, setLoadingAulas] = useState(false);
+
+  async function autoFillBimestre(turmaName: string, disciplina: string, bimStr: string) {
+    const cl = classes.find((x) => x.name === turmaName);
+    if (!cl || !disciplina || !bimStr) return;
+    setLoadingAulas(true);
+    try {
+      const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplina, Number(bimStr));
+      if (rows.length === 0) return;
+      // Aggregate all aulas into the guia fields
+      const habs = rows.map((a) => [a.habilidadeCodigo, a.habilidadeTexto].filter(Boolean).join(" ")).filter(Boolean).join("\n");
+      const conts = rows.map((a) => a.conteudo).filter(Boolean).join("\n");
+      const objs = rows.map((a) => a.objetivos).filter(Boolean).join("\n");
+      if (habs) set("habilidades", habs);
+      if (conts) set("conteudos", conts);
+      if (objs) set("objetivos_gerais", objs);
+      if (rows[0].unidadeTematica) set("tema", rows[0].unidadeTematica);
+    } finally {
+      setLoadingAulas(false);
+    }
+  }
+
   return (
     <>
       <Section title="Identificação">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Turma">
-            <SelectInput name="turma" value={c.turma ?? ""} onChange={(v) => set("turma", v)} options={classes.map((cl) => ({ value: cl.name, label: cl.name }))} placeholder="Selecione a turma" />
+            <SelectInput name="turma" value={c.turma ?? ""} onChange={(v) => { set("turma", v); autoFillBimestre(v, c.disciplina ?? "", c.bimestre ?? ""); }} options={classes.map((cl) => ({ value: cl.name, label: cl.name }))} placeholder="Selecione a turma" />
           </Field>
           <Field label="Disciplina">
-            <SelectInput name="disciplina" value={c.disciplina ?? ""} onChange={(v) => set("disciplina", v)} options={disciplines.map((d) => ({ value: d.name, label: d.name }))} placeholder="Selecione a disciplina" />
+            <SelectInput name="disciplina" value={c.disciplina ?? ""} onChange={(v) => { set("disciplina", v); autoFillBimestre(c.turma ?? "", v, c.bimestre ?? ""); }} options={disciplines.map((d) => ({ value: d.name, label: d.name }))} placeholder="Selecione a disciplina" />
           </Field>
           <Field label="Bimestre">
-            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => set("bimestre", v)} options={BIMESTRES.map((b) => ({ value: b, label: b }))} placeholder="Selecione" />
+            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => { set("bimestre", v); autoFillBimestre(c.turma ?? "", c.disciplina ?? "", v); }} options={BIMESTRES_OPTS} placeholder="Selecione" />
           </Field>
           <Field label="Ano letivo">
-            <TextInput name="ano_letivo" value={c.ano_letivo ?? ""} onChange={(v) => set("ano_letivo", v)} placeholder="2025" />
+            <TextInput name="ano_letivo" value={c.ano_letivo ?? "2026"} onChange={(v) => set("ano_letivo", v)} placeholder="2026" />
           </Field>
         </div>
+        {loadingAulas && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Icon icon="line-md:loading-loop" width={14} height={14} />
+            Carregando dados do currículo...
+          </div>
+        )}
       </Section>
 
       <Section title="Conteúdo Curricular">
@@ -292,7 +424,6 @@ function PeiForm({
   classes: Props["classes"];
   students: Props["students"];
 }) {
-  const BIMESTRES = ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre"];
   return (
     <>
       <Section title="Identificação do Aluno">
@@ -317,7 +448,7 @@ function PeiForm({
             <SelectInput name="turma" value={c.turma ?? ""} onChange={(v) => set("turma", v)} options={classes.map((cl) => ({ value: cl.name, label: cl.name }))} placeholder="Selecione" />
           </Field>
           <Field label="Bimestre">
-            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => set("bimestre", v)} options={BIMESTRES.map((b) => ({ value: b, label: b }))} placeholder="Selecione" />
+            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => set("bimestre", v)} options={BIMESTRES_OPTS} placeholder="Selecione" />
           </Field>
         </div>
         <Field label="Data de elaboração">
@@ -425,7 +556,6 @@ function PlanoEmaForm({
   set: (k: string, v: string) => void;
   classes: Props["classes"];
 }) {
-  const BIMESTRES = ["1º Bimestre", "2º Bimestre", "3º Bimestre", "4º Bimestre"];
   return (
     <>
       <Section title="Identificação">
@@ -434,7 +564,7 @@ function PlanoEmaForm({
             <SelectInput name="modalidade" value={c.modalidade ?? ""} onChange={(v) => set("modalidade", v)} options={[{ value: "Esporte", label: "Esporte" }, { value: "Música", label: "Música" }, { value: "Arte", label: "Arte" }]} placeholder="Selecione" />
           </Field>
           <Field label="Bimestre">
-            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => set("bimestre", v)} options={BIMESTRES.map((b) => ({ value: b, label: b }))} placeholder="Selecione" />
+            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => set("bimestre", v)} options={BIMESTRES_OPTS} placeholder="Selecione" />
           </Field>
           <Field label="Turmas atendidas">
             <TextInput name="turmas" value={c.turmas ?? ""} onChange={(v) => set("turmas", v)} placeholder="Ex: 1ºA, 1ºB, 2ºA" />

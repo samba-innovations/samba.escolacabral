@@ -153,3 +153,61 @@ model Document {
   @@map("documents")
   @@schema("samba_paper")
 }
+
+model Aula {
+  id                 Int     @id @default(autoincrement())
+  ciclo              String  @db.VarChar(30)
+  serie              String  @db.VarChar(10)
+  bimestre           Int     @db.SmallInt
+  aulaNum            Int     @map("aula_num") @db.SmallInt
+  disciplinaNome     String  @map("disciplina_nome") @db.VarChar(200)
+  eixo               String? @db.VarChar(400)
+  unidadeTematica    String? @map("unidade_tematica") @db.VarChar(400)
+  habilidadeCodigo   String? @map("habilidade_codigo") @db.VarChar(200)
+  habilidadeTexto    String? @map("habilidade_texto")
+  objetoConhecimento String? @map("objeto_conhecimento") @db.VarChar(400)
+  titulo             String  @db.VarChar(400)
+  conteudo           String?
+  objetivos          String?
+  bloco              String? @db.VarChar(200)
+
+  @@index([disciplinaNome], map: "ix_aulas_disciplina")
+  @@index([ciclo, serie, bimestre], map: "ix_aulas_serie_bim")
+  @@map("aulas")
+  @@schema("samba_paper")
+}
+
+model InstrumentoAvaliativo {
+  id        Int     @id @default(autoincrement())
+  nome      String  @db.VarChar(200)
+  descricao String?
+  categoria String? @db.VarChar(100)
+
+  @@map("instrumentos_avaliativos")
+  @@schema("samba_paper")
+}
+
+model Bimestre {
+  id         Int      @id @default(autoincrement())
+  ano        Int      @db.SmallInt
+  numero     Int      @db.SmallInt
+  label      String   @db.VarChar(30)
+  dataInicio DateTime @map("data_inicio") @db.Date
+  dataFim    DateTime @map("data_fim") @db.Date
+
+  @@unique([ano, numero])
+  @@map("bimestres")
+  @@schema("samba_paper")
+}
+
+model ProfessorDisciplina {
+  id            Int  @id @default(autoincrement())
+  userId        Int  @map("user_id")
+  disciplineId  Int  @map("discipline_id")
+  schoolClassId Int? @map("school_class_id")
+
+  @@unique([userId, disciplineId, schoolClassId])
+  @@index([userId], map: "ix_prof_disc_user")
+  @@map("professor_disciplinas")
+  @@schema("samba_paper")
+}

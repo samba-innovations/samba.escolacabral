@@ -56,7 +56,14 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
           status: doc.status as string,
         }}
         userName={session.name}
-        classes={classes.map((c) => ({ id: c.id, name: c.name, grade: c.grade.label, section: c.section.label }))}
+        classes={classes.map((c) => ({
+          id: c.id,
+          name: c.name,
+          grade: c.grade.label,
+          section: c.section.label,
+          ciclo: c.grade.level as string,
+          serie: String(c.grade.yearNumber),
+        }))}
         disciplines={disciplines.map((d) => ({ id: d.id, name: d.name, type: d.disciplineType }))}
         students={students.map((s) => ({
           id: s.id,
