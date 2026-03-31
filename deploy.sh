@@ -172,6 +172,7 @@ select_actions() {
     DO_GIT_PULL=false
     DO_SUBMODULES=false
     DO_WIPE_DB=false
+    DO_MIGRATE_PAPER=false
     DO_BUILD=false
     DO_RESTART_ONLY=false
 
@@ -187,6 +188,10 @@ select_actions() {
     print_warn "A próxima opção APAGA todos os dados do banco."
     if confirm "Recriar banco do zero (docker compose down -v)?"; then
         DO_WIPE_DB=true
+    fi
+
+    if confirm "Executar migração do samba-paper (novas tabelas curriculares)?"; then
+        DO_MIGRATE_PAPER=true
     fi
 
     if confirm "Fazer build das imagens Docker (--build)?"; then
@@ -207,12 +212,14 @@ select_actions() {
 print_summary() {
     print_section "Resumo das ações"
 
-    [ "$DO_GIT_PULL" = true ]      && print_info "git pull origin main" \
+    [ "$DO_GIT_PULL" = true ]       && print_info "git pull origin main" \
                                     || echo -e "  ${GRAY}  ○  git pull${NC}  ${GRAY}(pulado)${NC}"
     [ "$DO_SUBMODULES" = true ]    && print_info "git submodule update --init --recursive" \
                                     || echo -e "  ${GRAY}  ○  submodules${NC}  ${GRAY}(pulado)${NC}"
     [ "$DO_WIPE_DB" = true ]       && print_info "${RED}docker compose down -v  ← APAGA O BANCO${NC}" \
                                     || echo -e "  ${GRAY}  ○  down -v${NC}  ${GRAY}(banco mantido)${NC}"
+    [ "$DO_MIGRATE_PAPER" = true ] && print_info "migrate_paper_v2.sql + seed_paper_aulas.sql" \
+                                    || echo -e "  ${GRAY}  ○  migração paper${NC}  ${GRAY}(pulada)${NC}"
     [ "$DO_BUILD" = true ]         && print_info "docker compose up -d --build" \
                                     || true
     [ "$DO_RESTART_ONLY" = true ]  && print_info "docker compose restart" \
@@ -234,9 +241,10 @@ run_deploy() {
     local total=0
     local step=0
 
-    [ "$DO_GIT_PULL" = true ]     && total=$((total+1))
-    [ "$DO_SUBMODULES" = true ]   && total=$((total+1))
-    [ "$DO_WIPE_DB" = true ]      && total=$((total+1))
+    [ "$DO_GIT_PULL" = true ]       && total=$((total+1))
+    [ "$DO_SUBMODULES" = true ]     && total=$((total+1))
+    [ "$DO_WIPE_DB" = true ]        && total=$((total+1))
+    [ "$DO_MIGRATE_PAPER" = true ]  && total=$((total+1))
     total=$((total+1)) # sempre sobe os containers
 
     print_section "Executando"
@@ -267,6 +275,30 @@ run_deploy() {
         print_step $step $total "Removendo containers e volumes"
         docker compose down -v
         print_ok "Containers e volumes removidos."
+    fi
+
+    # Migração samba-paper
+    if [ "$DO_MIGRATE_PAPER" = true ]; then
+        step=$((step+1))
+        print_step $step $total "Executando migração samba-paper"
+        # Garante que o banco está rodando
+        if ! docker ps --format '{{.Names}}' | grep -q '^samba_db$'; then
+            print_info "Subindo banco de dados..."
+            docker compose up -d samba_db
+            sleep 5
+        fi
+        if wait_for_db; then
+            print_info "Criando tabelas curriculares..."
+            docker exec -i samba_db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-samba_db}" \
+                < samba-db/migrate_paper_v2.sql
+            print_ok "Tabelas criadas."
+            print_info "Populando currículo (1184 aulas)..."
+            docker exec -i samba_db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-samba_db}" \
+                < samba-db/seed_paper_aulas.sql
+            print_ok "Currículo carregado."
+        else
+            print_error "Banco não respondeu — migração pulada."
+        fi
     fi
 
     # Up
@@ -471,6 +503,17 @@ run_health_checks() {
             hc_ok "Vínculos turma↔disciplina: ${cd_count}"
         else
             hc_fail "Nenhum vínculo turma↔disciplina encontrado"
+        fi
+
+        # Currículo paper (aulas)
+        local aulas_count
+        aulas_count=$(db_query "SELECT COUNT(*) FROM samba_paper.aulas;" 2>/dev/null || echo "0")
+        if [ "$aulas_count" -gt 1000 ] 2>/dev/null; then
+            hc_ok "Aulas curriculares: ${aulas_count} (currículo 2026 carregado)"
+        elif [ "$aulas_count" -gt 0 ] 2>/dev/null; then
+            hc_warn "Aulas curriculares: ${aulas_count} — esperado ≥ 1184"
+        else
+            hc_warn "Tabela samba_paper.aulas vazia — rode a migração paper no deploy"
         fi
     fi
 
