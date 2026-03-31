@@ -51,6 +51,7 @@ services:
       DATABASE_URL: postgresql://samba_code_user:${CODE_DB_PASSWORD:-code2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      INTERNAL_URL_ACCESS: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     ports:
       - "3001:3001"
@@ -94,6 +95,8 @@ services:
       NEXTAUTH_SECRET: ${JWT_SECRET}
       NEXTAUTH_URL: ${URL_EDVANCE}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      INTERNAL_URL_ACCESS: http://access:3002
+      ACCESS_INTERNAL_URL: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     ports:
       - "3003:3003"
@@ -112,9 +115,14 @@ services:
       dockerfile: ../dockerfiles/Dockerfile.flourish
     container_name: samba_flourish_app
     environment:
+      DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD:-edvance2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      INTERNAL_URL_ACCESS: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "3004:3004"
     restart: unless-stopped
@@ -130,6 +138,7 @@ services:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-samba2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      INTERNAL_URL_ACCESS: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     ports:
       - "3005:3005"
