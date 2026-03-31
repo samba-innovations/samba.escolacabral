@@ -69,7 +69,7 @@ services:
       dockerfile: Dockerfile
     container_name: samba_access_app
     environment:
-      DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD:-edvance2025}@samba_db:5432/${POSTGRES_DB:-samba_db}
+      DATABASE_URL: postgresql://samba_school_user:${SCHOOL_DB_PASSWORD:-school2025secure}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
       URL_CODE: ${URL_CODE}
