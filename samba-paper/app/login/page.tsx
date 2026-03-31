@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { FileText } from "lucide-react";
+import Image from "next/image";
 
 export const metadata = { title: "Entrar" };
 
@@ -18,10 +18,8 @@ export default async function LoginPage({
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center space-y-8 p-8">
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
-            <FileText className="w-6 h-6 text-black" />
-          </div>
+        <div className="flex items-center justify-center gap-4">
+          <Image src="/imgs/paper-logo2.svg" alt="samba paper" width={52} height={52} />
           <div className="text-left">
             <p className="text-2xl font-black text-foreground">samba <span className="text-primary">paper</span></p>
             <p className="text-xs text-muted-foreground">Gerador de documentos pedagógicos</p>
