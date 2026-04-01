@@ -284,7 +284,7 @@ run_deploy() {
         # Garante que o banco está rodando
         if ! docker ps --format '{{.Names}}' | grep -q '^samba_db$'; then
             print_info "Subindo banco de dados..."
-            docker compose up -d samba_db
+            docker compose up -d db
             sleep 5
         fi
         if wait_for_db; then
