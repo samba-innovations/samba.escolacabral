@@ -19,8 +19,8 @@ GRAY='\033[0;37m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-# Hash SHA-256 da senha de deploy (não armazenar plaintext aqui)
-DEPLOY_HASH="bb5c6d7f179a4dcb6c600fed25bcb32afe99521496f857c03e92cc587b8caeee"
+# Hash SHA-256 da senha de deploy — definir DEPLOY_HASH_ENV no ambiente do servidor
+DEPLOY_HASH="${DEPLOY_HASH_ENV:?Variável DEPLOY_HASH_ENV não definida. Defina-a no ambiente antes de rodar o deploy.}"
 
 # -----------------------------------------------------------------------------
 # Utilitários visuais
