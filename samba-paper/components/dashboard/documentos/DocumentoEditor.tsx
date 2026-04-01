@@ -129,6 +129,123 @@ function SelectInput({
   );
 }
 
+// ─── Chip multi-select ───────────────────────────────────────────────────────
+
+function ChipSelect({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  if (options.length === 0) return null;
+  const selected = new Set(
+    value ? value.split("\n").map((s) => s.trim()).filter(Boolean) : options
+  );
+  const toggle = (opt: string) => {
+    const s = new Set(selected);
+    s.has(opt) ? s.delete(opt) : s.add(opt);
+    onChange(options.filter((o) => s.has(o)).join("\n"));
+  };
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => toggle(opt)}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+            selected.has(opt)
+              ? "bg-primary/10 border-primary text-primary"
+              : "bg-background border-border/40 text-muted-foreground line-through opacity-40 hover:opacity-70"
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Checkbox list ────────────────────────────────────────────────────────────
+
+function CheckboxList({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const selected = new Set(
+    value ? value.split(", ").map((s) => s.trim()).filter(Boolean) : []
+  );
+  const toggle = (opt: string) => {
+    const s = new Set(selected);
+    s.has(opt) ? s.delete(opt) : s.add(opt);
+    onChange(options.filter((o) => s.has(o)).join(", "));
+  };
+  return (
+    <div className="grid grid-cols-2 gap-2.5">
+      {options.map((opt) => (
+        <label key={opt} className="flex items-center gap-2 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={selected.has(opt)}
+            onChange={() => toggle(opt)}
+            className="w-4 h-4 rounded accent-primary cursor-pointer"
+          />
+          <span className="text-sm text-foreground group-hover:text-primary transition-colors">{opt}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+// ─── Predefined options ───────────────────────────────────────────────────────
+
+const RECURSOS_OPTS = [
+  "Livro didático",
+  "Quadro branco",
+  "Projetor / Datashow",
+  "Caderno de atividades",
+  "Material impresso / Xerox",
+  "Material manipulável",
+  "Vídeo / Recurso audiovisual",
+  "Computador / Tablet",
+  "Acesso à internet",
+];
+
+const AVALIACAO_OPTS = [
+  "Observação e participação",
+  "Atividade em sala",
+  "Exercícios no caderno",
+  "Tarefa de casa",
+  "Trabalho em grupo",
+  "Apresentação oral",
+  "Avaliação escrita / Prova",
+  "Autoavaliação",
+];
+
+function parseCodeList(raw: string | null): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/\n+/)
+    .map((s) => s.replace(/^[\s\-•*–]+/, "").trim())
+    .filter((s) => s.length > 2 && s.length < 80);
+}
+
+function parseBulletList(raw: string | null): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/\n+/)
+    .map((s) => s.replace(/^[\s\-•*–]+/, "").trim())
+    .filter((s) => s.length > 3);
+}
+
 // ─── Section title ────────────────────────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -166,6 +283,8 @@ function PlanoDeAulaForm({
   const [aulas, setAulas] = useState<AulaRecord[]>([]);
   const [loadingAulas, setLoadingAulas] = useState(false);
   const [aulaId, setAulaId] = useState<number | null>(null);
+  const [habilidadeOpcoes, setHabilidadeOpcoes] = useState<string[]>([]);
+  const [conteudoOpcoes, setConteudoOpcoes] = useState<string[]>([]);
 
   const selectedClass = classes.find((cl) => cl.name === c.turma);
 
@@ -190,10 +309,20 @@ function PlanoDeAulaForm({
     set("tema", a.titulo);
     set("eixo", a.eixo ?? "");
     set("unidade_tematica", a.unidadeTematica ?? "");
-    set("habilidades", [a.habilidadeCodigo, a.habilidadeTexto].filter(Boolean).join("\n"));
     set("objeto_conhecimento", a.objetoConhecimento ?? "");
-    set("conteudo", a.conteudo ?? "");
     set("objetivo_geral", a.objetivos ?? "");
+
+    // Parse habilidades into selectable chips
+    const codigos = parseCodeList(a.habilidadeCodigo);
+    const textos = parseBulletList(a.habilidadeTexto);
+    const habOpcoes = codigos.length > 0 ? codigos : textos;
+    setHabilidadeOpcoes(habOpcoes);
+    set("habilidades", habOpcoes.join("\n"));
+
+    // Parse conteúdo into selectable bullet items
+    const contItems = parseBulletList(a.conteudo);
+    setConteudoOpcoes(contItems);
+    set("conteudo", contItems.join("\n"));
   }
 
   return (
@@ -285,8 +414,19 @@ function PlanoDeAulaForm({
         <Field label="Objetivo geral">
           <TextArea name="objetivo_geral" value={c.objetivo_geral ?? ""} onChange={(v) => set("objetivo_geral", v)} placeholder="O que o aluno deverá ser capaz de fazer ao final da aula?" rows={3} />
         </Field>
-        <Field label="Habilidades BNCC / Currículo Paulista" hint="Pré-preenchido ao selecionar a aula do currículo">
-          <TextArea name="habilidades" value={c.habilidades ?? ""} onChange={(v) => set("habilidades", v)} placeholder="(EF09MA06) Compreender as funções como relações de dependência..." rows={4} />
+        <Field
+          label="Habilidades BNCC / Currículo Paulista"
+          hint={habilidadeOpcoes.length > 0 ? "Clique para incluir ou excluir cada habilidade" : "Pré-preenchido ao selecionar a aula do currículo"}
+        >
+          {habilidadeOpcoes.length > 0 ? (
+            <ChipSelect
+              options={habilidadeOpcoes}
+              value={c.habilidades ?? ""}
+              onChange={(v) => set("habilidades", v)}
+            />
+          ) : (
+            <TextArea name="habilidades" value={c.habilidades ?? ""} onChange={(v) => set("habilidades", v)} placeholder="(EF09MA06) Compreender as funções como relações de dependência..." rows={4} />
+          )}
         </Field>
         {c.objeto_conhecimento && (
           <Field label="Objeto de conhecimento">
@@ -296,8 +436,19 @@ function PlanoDeAulaForm({
       </Section>
 
       <Section title="Conteúdo e Desenvolvimento">
-        <Field label="Conteúdo" hint="Pré-preenchido ao selecionar a aula">
-          <TextArea name="conteudo" value={c.conteudo ?? ""} onChange={(v) => set("conteudo", v)} placeholder="Conteúdos a serem trabalhados..." rows={4} />
+        <Field
+          label="Conteúdo"
+          hint={conteudoOpcoes.length > 0 ? "Clique para incluir ou excluir cada conteúdo" : "Pré-preenchido ao selecionar a aula"}
+        >
+          {conteudoOpcoes.length > 0 ? (
+            <ChipSelect
+              options={conteudoOpcoes}
+              value={c.conteudo ?? ""}
+              onChange={(v) => set("conteudo", v)}
+            />
+          ) : (
+            <TextArea name="conteudo" value={c.conteudo ?? ""} onChange={(v) => set("conteudo", v)} placeholder="Conteúdos a serem trabalhados..." rows={4} />
+          )}
         </Field>
         <Field label="Momento inicial (Motivação / Diagnóstico)" hint="Aproximadamente 10–15 min">
           <TextArea name="desenvolvimento_inicial" value={c.desenvolvimento_inicial ?? ""} onChange={(v) => set("desenvolvimento_inicial", v)} placeholder="Como a aula será iniciada? Qual estratégia de engajamento?" rows={3} />
@@ -312,10 +463,18 @@ function PlanoDeAulaForm({
 
       <Section title="Recursos e Avaliação">
         <Field label="Recursos e materiais">
-          <TextArea name="recursos_materiais" value={c.recursos_materiais ?? ""} onChange={(v) => set("recursos_materiais", v)} placeholder="Livro didático, quadro, projetor, materiais manipuláveis..." rows={2} />
+          <CheckboxList
+            options={RECURSOS_OPTS}
+            value={c.recursos_materiais ?? ""}
+            onChange={(v) => set("recursos_materiais", v)}
+          />
         </Field>
         <Field label="Avaliação">
-          <TextArea name="avaliacao" value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} placeholder="Como será avaliada a aprendizagem? (Observação, exercícios, participação...)" rows={3} />
+          <CheckboxList
+            options={AVALIACAO_OPTS}
+            value={c.avaliacao ?? ""}
+            onChange={(v) => set("avaliacao", v)}
+          />
         </Field>
       </Section>
     </>
