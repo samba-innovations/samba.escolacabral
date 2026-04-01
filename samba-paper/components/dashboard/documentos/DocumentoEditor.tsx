@@ -425,16 +425,22 @@ function PlanoDeAulaForm({
         </Field>
         <Field
           label="Habilidades BNCC / Currículo Paulista"
-          hint={habilidadeOpcoes.length > 0 ? "Clique para incluir ou excluir cada habilidade" : "Pré-preenchido ao selecionar a aula do currículo"}
+          hint="Preenchido automaticamente ao selecionar a aula"
         >
           {habilidadeOpcoes.length > 0 ? (
-            <ChipSelect
-              options={habilidadeOpcoes}
-              value={c.habilidades ?? ""}
-              onChange={(v) => set("habilidades", v)}
-            />
+            <div className="flex flex-col gap-2">
+              {habilidadeOpcoes.map((h, i) => (
+                <div key={i} className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+                  <span className="mt-0.5 w-2 h-2 rounded-full bg-primary shrink-0" />
+                  <span className="text-sm text-foreground leading-relaxed">{h}</span>
+                </div>
+              ))}
+            </div>
           ) : (
-            <TextArea name="habilidades" value={c.habilidades ?? ""} onChange={(v) => set("habilidades", v)} placeholder="(EF09MA06) Compreender as funções como relações de dependência..." rows={4} />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-xl px-4 py-3 border border-border/40">
+              <span className="w-2 h-2 rounded-full bg-muted-foreground/40 shrink-0" />
+              Selecione a turma, disciplina, bimestre e uma aula para preencher automaticamente
+            </div>
           )}
         </Field>
         {c.objeto_conhecimento && (
