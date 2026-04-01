@@ -6,6 +6,15 @@
 
 set -euo pipefail
 
+# Carrega .env se existir no mesmo diretório do script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "${SCRIPT_DIR}/.env" ]; then
+    set -a
+    # shellcheck source=.env
+    source "${SCRIPT_DIR}/.env"
+    set +a
+fi
+
 # -----------------------------------------------------------------------------
 # Cores e estilos
 # -----------------------------------------------------------------------------
