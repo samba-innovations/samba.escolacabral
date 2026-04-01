@@ -9,6 +9,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['framer-motion'],
   experimental: {
     serverActions: { bodySizeLimit: '10mb' },
   },
