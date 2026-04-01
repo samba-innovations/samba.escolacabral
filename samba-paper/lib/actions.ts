@@ -148,15 +148,17 @@ export async function getSkillsByCodigos(codigos: string[]) {
 export async function getDisciplinasByProfesor() {
   const session = await getSession();
   if (!session) return [];
-  // Returns disciplines assigned to this teacher via teacher_assignments (samba_school)
   const assignments = await prisma.teacherAssignment.findMany({
     where: { userId: session.id },
     select: { disciplineId: true },
     distinct: ["disciplineId"],
   });
-  if (assignments.length === 0) return prisma.discipline.findMany({ orderBy: { name: "asc" } });
+  const where = assignments.length > 0
+    ? { id: { in: assignments.map((a) => a.disciplineId) } }
+    : {};
   return prisma.discipline.findMany({
-    where: { id: { in: assignments.map((a) => a.disciplineId) } },
+    where,
+    select: { id: true, name: true, disciplineType: true, aulasDisciplinaNome: true },
     orderBy: { name: "asc" },
   });
 }

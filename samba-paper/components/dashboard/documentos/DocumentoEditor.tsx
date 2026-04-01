@@ -32,7 +32,7 @@ interface Props {
   doc: DocData;
   userName: string;
   classes: { id: number; name: string; grade: string; section: string; ciclo: string; serie: string }[];
-  disciplines: { id: number; name: string; type: string }[];
+  disciplines: { id: number; name: string; type: string; aulasNome: string | null }[];
   students: { id: number; name: string; ra: string; className: string }[];
 }
 
@@ -291,9 +291,11 @@ function PlanoDeAulaForm({
   async function loadAulas(turmaName: string, disciplina: string, bimStr: string) {
     const cl = classes.find((x) => x.name === turmaName);
     if (!cl || !disciplina || !bimStr) { setAulas([]); return; }
+    const disc = disciplines.find((d) => d.name === disciplina);
+    const disciplinaNome = disc?.aulasNome ?? disciplina;
     setLoadingAulas(true);
     try {
-      const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplina, Number(bimStr));
+      const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplinaNome, Number(bimStr));
       setAulas(rows);
     } finally {
       setLoadingAulas(false);
@@ -512,9 +514,11 @@ function GuiaAprendizagemForm({
   async function autoFillBimestre(turmaName: string, disciplina: string, bimStr: string) {
     const cl = classes.find((x) => x.name === turmaName);
     if (!cl || !disciplina || !bimStr) return;
+    const disc = disciplines.find((d) => d.name === disciplina);
+    const disciplinaNome = disc?.aulasNome ?? disciplina;
     setLoadingAulas(true);
     try {
-      const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplina, Number(bimStr));
+      const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplinaNome, Number(bimStr));
       if (rows.length === 0) return;
       // Aggregate all aulas into the guia fields
       const habs = rows.map((a) => [a.habilidadeCodigo, a.habilidadeTexto].filter(Boolean).join(" ")).filter(Boolean).join("\n");

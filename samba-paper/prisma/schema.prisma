@@ -87,11 +87,12 @@ model SchoolClass {
 }
 
 model Discipline {
-  id                 Int                  @id @default(autoincrement())
-  name               String               @db.VarChar(150)
-  disciplineType     String               @default("base_comum") @map("discipline_type") @db.VarChar(30)
-  teacherAssignments TeacherAssignment[]
-  classDisciplines   ClassDiscipline[]
+  id                   Int                  @id @default(autoincrement())
+  name                 String               @db.VarChar(150)
+  disciplineType       String               @default("base_comum") @map("discipline_type") @db.VarChar(30)
+  aulasDisciplinaNome  String?              @map("aulas_disciplina_nome") @db.VarChar(200)
+  teacherAssignments   TeacherAssignment[]
+  classDisciplines     ClassDiscipline[]
 
   @@map("disciplines")
   @@schema("samba_school")

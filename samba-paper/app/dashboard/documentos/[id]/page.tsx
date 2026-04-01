@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { getDocument, getMyClasses, getDisciplines, getAeeStudents } from "@/lib/actions";
+import { getDocument, getMyClasses, getDisciplinasByProfesor, getAeeStudents } from "@/lib/actions";
 import { DocumentoEditor } from "@/components/dashboard/documentos/DocumentoEditor";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -23,7 +23,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
 
   const [classes, disciplines, students] = await Promise.all([
     getMyClasses(),
-    getDisciplines(),
+    getDisciplinasByProfesor(),
     doc.type === "pei" ? getAeeStudents() : Promise.resolve([]),
   ]);
 
@@ -64,7 +64,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
           ciclo: c.grade.level as string,
           serie: String(c.grade.yearNumber),
         }))}
-        disciplines={disciplines.map((d) => ({ id: d.id, name: d.name, type: d.disciplineType }))}
+        disciplines={disciplines.map((d) => ({ id: d.id, name: d.name, type: d.disciplineType, aulasNome: d.aulasDisciplinaNome ?? null }))}
         students={students.map((s) => ({
           id: s.id,
           name: s.name,
