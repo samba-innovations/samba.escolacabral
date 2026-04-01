@@ -126,7 +126,7 @@ services:
         NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
     container_name: samba_flourish_app
     environment:
-      DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD}@samba_db:5432/${POSTGRES_DB:-samba_db}
+      DATABASE_URL: postgresql://samba_flourish_user:${FLOURISH_DB_PASSWORD}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
       NEXT_PUBLIC_APP_URL: ${URL_FLOURISH}
