@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveDocument, getAulasCurriculo } from "@/lib/actions";
+import { saveDocument, getAulasCurriculo, getSkillsByCodigos } from "@/lib/actions";
 import { toast } from "sonner";
 import { Loader2, Upload, Download } from "lucide-react";
 
@@ -312,12 +312,21 @@ function PlanoDeAulaForm({
     set("objeto_conhecimento", a.objetoConhecimento ?? "");
     set("objetivo_geral", a.objetivos ?? "");
 
-    // Parse habilidades into selectable chips
+    // Busca habilidades completas na tabela samba_edvance.skills pelos códigos
     const codigos = parseCodeList(a.habilidadeCodigo);
-    const textos = parseBulletList(a.habilidadeTexto);
-    const habOpcoes = codigos.length > 0 ? codigos : textos;
-    setHabilidadeOpcoes(habOpcoes);
-    set("habilidades", habOpcoes.join("\n"));
+    if (codigos.length > 0) {
+      getSkillsByCodigos(codigos).then((skills) => {
+        const habOpcoes = skills.length > 0
+          ? skills.map((s) => `(${s.code}) ${s.description}`)
+          : codigos;
+        setHabilidadeOpcoes(habOpcoes);
+        set("habilidades", habOpcoes.join("\n"));
+      });
+    } else {
+      const textos = parseBulletList(a.habilidadeTexto);
+      setHabilidadeOpcoes(textos);
+      set("habilidades", textos.join("\n"));
+    }
 
     // Parse conteúdo into selectable bullet items
     const contItems = parseBulletList(a.conteudo);

@@ -136,6 +136,15 @@ export async function getAulasCurriculo(
   });
 }
 
+export async function getSkillsByCodigos(codigos: string[]) {
+  if (codigos.length === 0) return [];
+  return prisma.skill.findMany({
+    where: { code: { in: codigos } },
+    select: { code: true, description: true },
+    orderBy: { code: "asc" },
+  });
+}
+
 export async function getDisciplinasByProfesor() {
   const session = await getSession();
   if (!session) return [];

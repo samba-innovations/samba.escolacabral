@@ -7,7 +7,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["samba_school", "samba_paper"]
+  schemas  = ["samba_school", "samba_paper", "samba_edvance"]
 }
 
 // ── samba_school (read-only) ─────────────────────────────────────────────────
@@ -226,5 +226,18 @@ model Bimestre {
   @@unique([ano, numero])
   @@map("bimestres")
   @@schema("samba_paper")
+}
+
+// ── samba_edvance (read-only) ─────────────────────────────────────────────────
+
+model Skill {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique @db.VarChar(20)
+  description String
+  area        String? @db.VarChar(100)
+  level       String? @db.VarChar(50)
+
+  @@map("skills")
+  @@schema("samba_edvance")
 }
 
