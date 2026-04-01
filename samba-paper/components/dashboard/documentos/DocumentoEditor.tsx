@@ -314,18 +314,18 @@ function PlanoDeAulaForm({
 
     // Busca habilidades completas na tabela samba_edvance.skills pelos códigos
     const codigos = parseCodeList(a.habilidadeCodigo);
+    const textos = parseBulletList(a.habilidadeTexto);
+    const fallback = codigos.length > 0 ? codigos : textos;
+    setHabilidadeOpcoes(fallback);
+    set("habilidades", fallback.join("\n"));
     if (codigos.length > 0) {
       getSkillsByCodigos(codigos).then((skills) => {
-        const habOpcoes = skills.length > 0
-          ? skills.map((s) => `(${s.code}) ${s.description}`)
-          : codigos;
-        setHabilidadeOpcoes(habOpcoes);
-        set("habilidades", habOpcoes.join("\n"));
-      });
-    } else {
-      const textos = parseBulletList(a.habilidadeTexto);
-      setHabilidadeOpcoes(textos);
-      set("habilidades", textos.join("\n"));
+        if (skills.length > 0) {
+          const habOpcoes = skills.map((s) => `(${s.code}) ${s.description}`);
+          setHabilidadeOpcoes(habOpcoes);
+          set("habilidades", habOpcoes.join("\n"));
+        }
+      }).catch(() => { /* mantém fallback */ });
     }
 
     // Parse conteúdo into selectable bullet items
