@@ -153,7 +153,6 @@ enum DocumentType {
   projeto
   pdi
 
-  @@map("document_type")
   @@schema("samba_paper")
 }
 
@@ -161,7 +160,6 @@ enum DocumentStatus {
   draft
   final
 
-  @@map("document_status")
   @@schema("samba_paper")
 }
 
