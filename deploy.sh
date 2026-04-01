@@ -181,6 +181,7 @@ select_actions() {
     DO_GIT_PULL=false
     DO_SUBMODULES=false
     DO_WIPE_DB=false
+    DO_SEED_SCHOOL=false
     DO_MIGRATE_PAPER=false
     DO_BUILD=false
     DO_RESTART_ONLY=false
@@ -197,6 +198,10 @@ select_actions() {
     print_warn "A próxima opção APAGA todos os dados do banco."
     if confirm "Recriar banco do zero (docker compose down -v)?"; then
         DO_WIPE_DB=true
+    fi
+
+    if confirm "Recriar seed da escola (usuários, turmas, disciplinas)?"; then
+        DO_SEED_SCHOOL=true
     fi
 
     if confirm "Executar migração do samba-paper (novas tabelas curriculares)?"; then
@@ -227,6 +232,8 @@ print_summary() {
                                     || echo -e "  ${GRAY}  ○  submodules${NC}  ${GRAY}(pulado)${NC}"
     [ "$DO_WIPE_DB" = true ]       && print_info "${RED}docker compose down -v  ← APAGA O BANCO${NC}" \
                                     || echo -e "  ${GRAY}  ○  down -v${NC}  ${GRAY}(banco mantido)${NC}"
+    [ "$DO_SEED_SCHOOL" = true ]   && print_info "07_sso_tokens.sql + 06_seed.sql + 08_skills_seed.sql" \
+                                    || echo -e "  ${GRAY}  ○  seed escola${NC}  ${GRAY}(pulado)${NC}"
     [ "$DO_MIGRATE_PAPER" = true ] && print_info "migrate_paper_v2.sql + seed_paper_aulas.sql" \
                                     || echo -e "  ${GRAY}  ○  migração paper${NC}  ${GRAY}(pulada)${NC}"
     [ "$DO_BUILD" = true ]         && print_info "docker compose up -d --build" \
@@ -252,6 +259,7 @@ run_deploy() {
 
     [ "$DO_GIT_PULL" = true ]       && total=$((total+1))
     [ "$DO_SUBMODULES" = true ]     && total=$((total+1))
+    [ "$DO_SEED_SCHOOL" = true ]    && total=$((total+1))
     [ "$DO_WIPE_DB" = true ]        && total=$((total+1))
     [ "$DO_MIGRATE_PAPER" = true ]  && total=$((total+1))
     total=$((total+1)) # sempre sobe os containers
@@ -284,6 +292,31 @@ run_deploy() {
         print_step $step $total "Removendo containers e volumes"
         docker compose down -v
         print_ok "Containers e volumes removidos."
+    fi
+
+    # Seed da escola (sso_tokens + dados base + skills)
+    if [ "$DO_SEED_SCHOOL" = true ]; then
+        step=$((step+1))
+        print_step $step $total "Seed da escola (usuários, turmas, disciplinas)"
+        if ! docker ps --format '{{.Names}}' | grep -q '^samba_db$'; then
+            print_info "Subindo banco de dados..."
+            docker compose up -d db
+            sleep 5
+        fi
+        if wait_for_db; then
+            print_info "Criando tabela sso_tokens e permissões..."
+            docker exec -i samba_db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-samba_db}" \
+                < samba-db/init/07_sso_tokens.sql
+            print_info "Populando dados base da escola..."
+            docker exec -i samba_db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-samba_db}" \
+                < samba-db/init/06_seed.sql
+            print_info "Populando habilidades BNCC..."
+            docker exec -i samba_db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-samba_db}" \
+                < samba-db/init/08_skills_seed.sql
+            print_ok "Seed da escola concluído."
+        else
+            print_error "Banco não respondeu — seed pulado."
+        fi
     fi
 
     # Migração samba-paper
