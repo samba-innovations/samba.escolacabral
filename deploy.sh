@@ -313,6 +313,13 @@ run_deploy() {
             print_info "Populando habilidades BNCC..."
             docker exec -i samba_db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-samba_db}" \
                 < samba-db/init/08_skills_seed.sql
+            print_info "Sincronizando senhas dos usuários de app com o .env..."
+            docker exec samba_db psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-samba_db}" -c "
+                ALTER USER samba_school_user  WITH PASSWORD '${SCHOOL_DB_PASSWORD}';
+                ALTER USER samba_code_user    WITH PASSWORD '${CODE_DB_PASSWORD}';
+                ALTER USER samba_edvance_user WITH PASSWORD '${EDVANCE_DB_PASSWORD}';
+                ALTER USER samba_paper_user   WITH PASSWORD '${PAPER_DB_PASSWORD}';
+            "
             print_ok "Seed da escola concluído."
         else
             print_error "Banco não respondeu — seed pulado."
