@@ -2,25 +2,33 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LogOut, X } from "lucide-react";
-import { Icon } from "@iconify/react";
+import { LayoutDashboard, FileText, PlusCircle, LogOut, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "./SidebarContext";
+import type { LucideIcon } from "lucide-react";
 
-const NAV = [
-  { href: "/dashboard",                 label: "Visão Geral",     icon: "line-md:home-md" },
-  { href: "/dashboard/documentos",      label: "Meus Documentos", icon: "line-md:document" },
-  { href: "/dashboard/documentos/novo", label: "Novo Documento",  icon: "line-md:plus-circle" },
+const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
+  { href: "/dashboard",                 label: "Visão Geral",     icon: LayoutDashboard, exact: true },
+  { href: "/dashboard/documentos",      label: "Meus Documentos", icon: FileText },
+  { href: "/dashboard/documentos/novo", label: "Novo Documento",  icon: PlusCircle,      exact: true },
 ];
+
+function isActive(href: string, pathname: string, exact?: boolean): boolean {
+  if (exact) return pathname === href;
+  // startsWith mas exclui rotas mais específicas que têm seu próprio item (e.g. /novo)
+  return pathname.startsWith(href + "/")
+    ? !NAV.some((n) => n.exact && pathname === n.href && n.href !== href)
+    : pathname === href;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, isMobileOpen, toggleMobile } = useSidebar();
 
   const NavLink = ({
-    href, icon, label, active,
-  }: { href: string; icon: string; label: string; active: boolean }) => (
+    href, icon: Icon, label, active,
+  }: { href: string; icon: LucideIcon; label: string; active: boolean }) => (
     <Link href={href} onClick={() => isMobileOpen && toggleMobile()} className="relative group block">
       <div className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-bold transition-all duration-300 ${
         active
@@ -28,9 +36,7 @@ export function Sidebar() {
           : "text-foreground/60 hover:text-foreground hover:bg-muted/50"
       }`}>
         <Icon
-          icon={icon}
-          width={18}
-          height={18}
+          size={18}
           className={`${active ? "text-primary" : "text-foreground/40 group-hover:text-foreground/70"} shrink-0`}
         />
         <span className={`truncate whitespace-nowrap transition-all duration-300 ${
@@ -101,11 +107,7 @@ export function Sidebar() {
               href={item.href}
               icon={item.icon}
               label={item.label}
-              active={
-                item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.href)
-              }
+              active={isActive(item.href, pathname, item.exact)}
             />
           ))}
         </nav>
