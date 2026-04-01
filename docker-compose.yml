@@ -55,6 +55,7 @@ services:
       DATABASE_URL: postgresql://samba_code_user:${CODE_DB_PASSWORD}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      NEXT_PUBLIC_APP_URL: ${URL_CODE}
       INTERNAL_URL_ACCESS: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     ports:
@@ -102,6 +103,7 @@ services:
       NEXTAUTH_SECRET: ${JWT_SECRET}
       NEXTAUTH_URL: ${URL_EDVANCE}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      NEXT_PUBLIC_APP_URL: ${URL_EDVANCE}
       INTERNAL_URL_ACCESS: http://access:3002
       ACCESS_INTERNAL_URL: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
@@ -127,6 +129,7 @@ services:
       DATABASE_URL: postgresql://samba_edvance_user:${EDVANCE_DB_PASSWORD}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      NEXT_PUBLIC_APP_URL: ${URL_FLOURISH}
       INTERNAL_URL_ACCESS: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     depends_on:
@@ -149,6 +152,7 @@ services:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      NEXT_PUBLIC_APP_URL: ${URL_ADMIN}
       INTERNAL_URL_ACCESS: http://access:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     ports:
@@ -169,6 +173,7 @@ services:
       DATABASE_URL: postgresql://samba_paper_user:${PAPER_DB_PASSWORD}@samba_db:5432/${POSTGRES_DB:-samba_db}
       JWT_SECRET: ${JWT_SECRET}
       NEXT_PUBLIC_URL_ACCESS: ${URL_ACCESS}
+      NEXT_PUBLIC_APP_URL: ${URL_PAPER}
       ACCESS_INTERNAL_URL: http://samba_access_app:3002
       COOKIE_DOMAIN: ${COOKIE_DOMAIN}
       STORAGE_DIR: /app/storage
