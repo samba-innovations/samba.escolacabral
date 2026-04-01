@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { saveDocument, getAulasCurriculo } from "@/lib/actions";
 import { toast } from "sonner";
-import { Icon } from "@iconify/react";
+import { Loader2, Upload, Download } from "lucide-react";
 
 interface DocData {
   id: number;
@@ -375,7 +375,7 @@ function PlanoDeAulaForm({
           <Field label="Selecione a aula do currículo" hint={selectedClass ? `${selectedClass.ciclo === 'fundamental' ? 'Anos Finais' : 'Ensino Médio'} — ${selectedClass.grade}` : undefined}>
             {loadingAulas ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
-                <Icon icon="line-md:loading-loop" width={16} height={16} />
+                <Loader2 size={16} className="animate-spin" />
                 Carregando aulas...
               </div>
             ) : (
@@ -533,7 +533,7 @@ function GuiaAprendizagemForm({
         </div>
         {loadingAulas && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Icon icon="line-md:loading-loop" width={14} height={14} />
+            <Loader2 size={14} className="animate-spin" />
             Carregando dados do currículo...
           </div>
         )}
@@ -931,7 +931,7 @@ export function DocumentoEditor({ doc, userName, classes, disciplines, students 
           disabled={isPending || isGenerating}
           className="flex items-center justify-center gap-2 bg-muted hover:bg-muted/80 text-foreground font-bold px-6 py-3 rounded-2xl transition-colors disabled:opacity-50"
         >
-          <Icon icon={isPending ? "line-md:loading-loop" : "line-md:uploading-loop"} width={16} height={16} />
+          {isPending ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
           Salvar rascunho
         </button>
 
@@ -940,7 +940,7 @@ export function DocumentoEditor({ doc, userName, classes, disciplines, students 
           disabled={isPending || isGenerating}
           className="flex items-center justify-center gap-2 bg-secondary hover:bg-secondary/90 text-white font-bold px-6 py-3 rounded-2xl transition-colors disabled:opacity-50"
         >
-          <Icon icon={isGenerating ? "line-md:loading-loop" : "line-md:file-download"} width={16} height={16} />
+          {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
           {isGenerating ? "Gerando PDF..." : "Gerar PDF"}
         </button>
 
@@ -951,7 +951,7 @@ export function DocumentoEditor({ doc, userName, classes, disciplines, students 
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-black font-bold px-6 py-3 rounded-2xl transition-colors"
           >
-            <Icon icon="line-md:file-download" width={16} height={16} />
+            <Download size={16} />
             Baixar PDF
           </a>
         )}

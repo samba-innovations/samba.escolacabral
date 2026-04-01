@@ -1,6 +1,5 @@
 import { getSession } from "@/lib/auth";
 import { getMyDocuments } from "@/lib/actions";
-import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 
@@ -25,9 +24,9 @@ export default async function DashboardPage() {
   const finals = docs.filter((d) => d.status === "final").length;
 
   const stats = [
-    { label: "Total de documentos", value: total,  icon: "line-md:document",       color: "text-primary",      bg: "bg-primary/10"      },
-    { label: "Rascunhos",           value: drafts, icon: "line-md:watch",           color: "text-secondary",    bg: "bg-secondary/10"    },
-    { label: "Finalizados",         value: finals, icon: "line-md:confirm-circle",  color: "text-emerald-500",  bg: "bg-emerald-500/10"  },
+    { label: "Total de documentos", value: total,  icon: "document", color: "text-primary",      bg: "bg-primary/10"      },
+    { label: "Rascunhos",           value: drafts, icon: "clock",    color: "text-secondary",    bg: "bg-secondary/10"    },
+    { label: "Finalizados",         value: finals, icon: "check",    color: "text-emerald-500",  bg: "bg-emerald-500/10"  },
   ];
 
   const recentDocs = docs.slice(0, 5).map((doc) => ({

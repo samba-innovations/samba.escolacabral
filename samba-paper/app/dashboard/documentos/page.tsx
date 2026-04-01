@@ -1,5 +1,5 @@
 import { getMyDocuments, deleteDocument } from "@/lib/actions";
-import { Icon } from "@iconify/react";
+import { PlusCircle, FileText, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = { title: "Meus Documentos" };
@@ -25,21 +25,21 @@ export default async function DocumentosPage() {
           href="/dashboard/documentos/novo"
           className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-black font-bold px-4 py-2 rounded-xl text-sm transition-colors"
         >
-          <Icon icon="line-md:plus-circle" width={16} height={16} />
+          <PlusCircle size={16} />
           Novo documento
         </Link>
       </div>
 
       {docs.length === 0 ? (
         <div className="bg-card border border-border/50 rounded-2xl p-12 text-center">
-          <Icon icon="line-md:document" width={40} height={40} className="text-muted-foreground mx-auto mb-3" />
+          <FileText size={40} className="text-muted-foreground mx-auto mb-3" />
           <p className="font-bold text-foreground">Nenhum documento ainda</p>
           <p className="text-sm text-muted-foreground mt-1 mb-4">Crie seu primeiro documento pedagógico.</p>
           <Link
             href="/dashboard/documentos/novo"
             className="inline-flex items-center gap-2 bg-primary text-black font-bold px-4 py-2 rounded-xl text-sm"
           >
-            <Icon icon="line-md:plus-circle" width={16} height={16} />
+            <PlusCircle size={16} />
             Criar documento
           </Link>
         </div>
@@ -48,7 +48,7 @@ export default async function DocumentosPage() {
           {docs.map((doc) => (
             <div key={doc.id} className="flex items-center gap-4 px-6 py-4">
               <div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
-                <Icon icon="line-md:document" width={16} height={16} className="text-secondary" />
+                <FileText size={16} className="text-secondary" />
               </div>
               <Link href={`/dashboard/documentos/${doc.id}`} className="flex-1 min-w-0 hover:text-primary transition-colors">
                 <p className="font-bold text-foreground text-sm truncate">{doc.title}</p>
@@ -65,7 +65,7 @@ export default async function DocumentosPage() {
               </span>
               <form action={async () => { "use server"; await deleteDocument(doc.id); }}>
                 <button type="submit" className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                  <Icon icon="line-md:remove" width={16} height={16} />
+                  <Trash2 size={16} />
                 </button>
               </form>
             </div>

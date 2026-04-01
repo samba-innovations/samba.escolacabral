@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, FileText, Clock, CheckCircle2, PlusCircle, type LucideIcon } from "lucide-react";
+
+const STAT_ICONS: Record<string, LucideIcon> = {
+  document: FileText,
+  clock:    Clock,
+  check:    CheckCircle2,
+};
 
 interface StatItem {
   label: string;
@@ -67,7 +72,7 @@ export function DashboardClient({ firstName, stats, typeLabels, recentDocs, tota
                 <p className="text-3xl font-black text-foreground">{s.value}</p>
               </div>
               <div className={`${s.bg} p-3 rounded-xl flex items-center justify-center`}>
-                <Icon icon={s.icon} width={20} height={20} className={s.color} />
+                {(() => { const StatIcon = STAT_ICONS[s.icon]; return StatIcon ? <StatIcon size={20} className={s.color} /> : null; })()}
               </div>
             </div>
           </motion.div>
@@ -91,12 +96,7 @@ export function DashboardClient({ firstName, stats, typeLabels, recentDocs, tota
                 href={`/dashboard/documentos/novo?type=${type}`}
                 className="group bg-card border border-border/50 hover:border-primary/50 rounded-2xl p-4 text-sm font-semibold text-foreground hover:text-primary transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 flex items-center gap-2"
               >
-                <Icon
-                  icon="line-md:plus-circle"
-                  width={16}
-                  height={16}
-                  className="shrink-0 text-primary"
-                />
+                <PlusCircle size={16} className="shrink-0 text-primary" />
                 {label}
               </Link>
             </motion.div>
@@ -131,7 +131,7 @@ export function DashboardClient({ firstName, stats, typeLabels, recentDocs, tota
                   className="flex items-center gap-4 px-6 py-4 hover:bg-muted/20 transition-colors"
                 >
                   <div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
-                    <Icon icon="line-md:document" width={16} height={16} className="text-secondary" />
+                    <FileText size={16} className="text-secondary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-foreground text-sm truncate">{doc.title}</p>
