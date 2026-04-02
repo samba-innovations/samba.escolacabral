@@ -191,8 +191,8 @@ model Aula {
   aulaNum            Int     @map("aula_num") @db.SmallInt
   disciplinaNome     String  @map("disciplina_nome") @db.VarChar(200)
   eixo               String? @db.VarChar(400)
-  unidadeTematica    String? @map("unidade_tematica") @db.VarChar(400)
-  habilidadeCodigo   String? @map("habilidade_codigo") @db.VarChar(200)
+  unidadeTematica    String? @map("unidade_tematica")
+  habilidadeCodigo   String? @map("habilidade_codigo")
   habilidadeTexto    String? @map("habilidade_texto")
   objetoConhecimento String? @map("objeto_conhecimento") @db.VarChar(400)
   titulo             String  @db.VarChar(400)
@@ -203,6 +203,21 @@ model Aula {
   @@index([disciplinaNome], map: "ix_aulas_disciplina")
   @@index([ciclo, serie, bimestre], map: "ix_aulas_serie_bim")
   @@map("aulas")
+  @@schema("samba_paper")
+}
+
+model AprendizagemEssencial {
+  id             Int    @id @default(autoincrement())
+  codigo         String @db.VarChar(20)
+  descricao      String
+  disciplinaNome String @map("disciplina_nome") @db.VarChar(200)
+  ciclo          String @db.VarChar(30)
+  serie          String @db.VarChar(10)
+  bimestre       Int    @db.SmallInt
+
+  @@unique([codigo, disciplinaNome, ciclo, serie, bimestre])
+  @@index([disciplinaNome, ciclo, serie, bimestre], map: "ix_ae_disciplina_serie")
+  @@map("aprendizagens_essenciais")
   @@schema("samba_paper")
 }
 
