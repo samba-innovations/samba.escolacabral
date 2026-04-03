@@ -60,8 +60,8 @@ function govtHeader(doc: PDFKit.PDFDocument) {
   const eiY    = (GOVT_H - eiW) / 2
 
   // SP Educação logo (left)
-  if (hasImg('logo-sp.png')) {
-    doc.image(imgPath('logo-sp.png'), ML, logoY, { width: logoW })
+  if (hasImg('logo_sp.png')) {
+    doc.image(imgPath('logo_sp.png'), ML, logoY, { width: logoW })
   } else {
     // Fallback text
     doc.font('Helvetica-Bold').fontSize(15).fillColor('#cc0000')
@@ -72,8 +72,8 @@ function govtHeader(doc: PDFKit.PDFDocument) {
 
   // Ensino Integral logo (right)
   const eiX = PAGE_W - MR - eiW
-  if (hasImg('logo-ensino-integral.png')) {
-    doc.image(imgPath('logo-ensino-integral.png'), eiX, eiY, { width: eiW })
+  if (hasImg('logo_integral.png')) {
+    doc.image(imgPath('logo_integral.png'), eiX, eiY, { width: eiW })
   } else {
     // Fallback: yellow circular text
     doc.font('Helvetica-Bold').fontSize(6.5).fillColor('#c8860a')
