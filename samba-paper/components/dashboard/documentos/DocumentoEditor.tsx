@@ -230,14 +230,62 @@ const MOMENTOS_INICIAIS = [
   { id: 20, nome: "Integração com tecnologia",         descritor: "Utiliza recursos tecnológicos para despertar interesse e diagnosticar familiaridade." },
 ];
 
-// ─── MomentoInicialCard ───────────────────────────────────────────────────────
+const DESENVOLVIMENTO_OPTS = [
+  { id:  1, nome: "Resolução orientada de problemas",       descritor: "Desenvolve conceitos por meio da resolução guiada de situações-problema." },
+  { id:  2, nome: "Aprendizagem baseada em problemas (PBL)", descritor: "Investiga problema complexo em grupo, articulando teoria e prática." },
+  { id:  3, nome: "Aprendizagem baseada em projetos (PjBL)", descritor: "Desenvolve produto ou solução ao longo da atividade com aplicação real." },
+  { id:  4, nome: "Estudo de caso aprofundado",             descritor: "Analisa situação detalhada, propondo soluções fundamentadas." },
+  { id:  5, nome: "Experimentação prática",                 descritor: "Realiza experimentos para observar fenômenos e validar hipóteses." },
+  { id:  6, nome: "Modelagem matemática/científica",        descritor: "Representa situações reais por meio de modelos matemáticos ou computacionais." },
+  { id:  7, nome: "Programação aplicada",                   descritor: "Desenvolve algoritmos/códigos para resolver problemas específicos." },
+  { id:  8, nome: "Rotação por estações",                   descritor: "Alterna atividades em diferentes estações com foco em habilidades diversas." },
+  { id:  9, nome: "Sala de aula invertida (aplicação)",     descritor: "Aplica conhecimentos previamente estudados em atividades práticas." },
+  { id: 10, nome: "Aprendizagem colaborativa estruturada",  descritor: "Resolve tarefas em grupo com papéis definidos e interdependência." },
+  { id: 11, nome: "Resolução em níveis (progressão)",       descritor: "Trabalha atividades com dificuldade crescente para consolidar aprendizagem." },
+  { id: 12, nome: "Análise e interpretação de dados",       descritor: "Explora dados reais para extrair padrões, conclusões e inferências." },
+  { id: 13, nome: "Simulação (digital ou analógica)",       descritor: "Utiliza simulações para compreender sistemas complexos." },
+  { id: 14, nome: "Construção de protótipos",               descritor: "Desenvolve artefatos físicos ou digitais para testar ideias." },
+  { id: 15, nome: "Debate estruturado",                     descritor: "Discute ideias com base em evidências e argumentação lógica." },
+  { id: 16, nome: "Ensino entre pares (peer instruction)",  descritor: "Alunos explicam conceitos entre si com mediação do professor." },
+  { id: 17, nome: "Resolução comentada (metacognição)",     descritor: "Explicita o raciocínio durante a resolução de problemas." },
+  { id: 18, nome: "Gamificação aplicada",                   descritor: "Utiliza mecânicas de jogo para engajar na resolução de desafios." },
+  { id: 19, nome: "Investigação guiada (inquiry-based)",    descritor: "Conduz investigação com orientação parcial do professor." },
+  { id: 20, nome: "Uso de tecnologias digitais interativas",descritor: "Utiliza softwares, sensores ou plataformas para exploração ativa." },
+];
 
-function MomentoInicialCard({
+const FECHAMENTO_OPTS = [
+  { id:  1, nome: "Síntese coletiva mediada",               descritor: "Organiza os principais conceitos da aula com participação dos alunos." },
+  { id:  2, nome: "Retomada da questão inicial",            descritor: "Revisa o problema gerador à luz dos conhecimentos construídos." },
+  { id:  3, nome: "Construção de mapa conceitual final",    descritor: "Sistematiza conceitos e relações após a aprendizagem." },
+  { id:  4, nome: "Registro estruturado (caderno/portfólio)",descritor: "Formaliza os aprendizados em formato organizado e pessoal." },
+  { id:  5, nome: "Resposta escrita reflexiva",             descritor: "Elabora síntese individual com base na compreensão adquirida." },
+  { id:  6, nome: "Metacognição guiada",                    descritor: "Reflete sobre o que e como aprendeu durante a aula." },
+  { id:  7, nome: "Correção comentada",                     descritor: "Analisa soluções destacando estratégias e possíveis erros." },
+  { id:  8, nome: "Generalização do conceito",              descritor: "Amplia o conhecimento para outros contextos ou situações." },
+  { id:  9, nome: "Aplicação rápida (transferência)",       descritor: "Resolve novo problema para verificar consolidação do aprendizado." },
+  { id: 10, nome: "Autoavaliação final",                    descritor: "Avalia o próprio desempenho e nível de compreensão." },
+  { id: 11, nome: "Exit ticket",                            descritor: "Responde questão breve para evidenciar aprendizagem imediata." },
+  { id: 12, nome: "Socialização de resultados",             descritor: "Compartilha soluções, produtos ou conclusões com a turma." },
+  { id: 13, nome: "Construção de resumo coletivo",          descritor: "Produz síntese conjunta dos conteúdos abordados." },
+  { id: 14, nome: "Comparação 'antes e depois'",            descritor: "Confronta ideias iniciais com o conhecimento atual." },
+  { id: 15, nome: "Conexão interdisciplinar",               descritor: "Relaciona o conteúdo com outras áreas do conhecimento." },
+  { id: 16, nome: "Proposição de continuidade (gancho)",    descritor: "Indica desdobramentos ou próximos passos da aprendizagem." },
+  { id: 17, nome: "Elaboração de pergunta final",           descritor: "Formula novas questões a partir do que foi aprendido." },
+  { id: 18, nome: "Checklist de aprendizagem",              descritor: "Verifica objetivos atingidos durante a aula." },
+  { id: 19, nome: "Feedback imediato do professor",         descritor: "Oferece devolutiva clara sobre o desempenho da turma." },
+  { id: 20, nome: "Validação coletiva de conceitos-chave",  descritor: "Confirma, com a turma, os conhecimentos essenciais construídos." },
+];
+
+// ─── TecnicaCard — genérico para momento inicial, desenvolvimento e fechamento ─
+
+type TecnicaItem = { id: number; nome: string; descritor: string };
+
+function TecnicaCard({
   item,
   selected,
   onSelect,
 }: {
-  item: typeof MOMENTOS_INICIAIS[number];
+  item: TecnicaItem;
   selected: boolean;
   onSelect: (id: number) => void;
 }) {
@@ -499,6 +547,8 @@ function PlanoDeAulaForm({
   const [habilidadeOpcoes, setHabilidadeOpcoes] = useState<string[]>([]);
   const [conteudoOpcoes, setConteudoOpcoes] = useState<string[]>([]);
   const [momentoId, setMomentoId] = useState<number | null>(null);
+  const [desenvolvimentoId, setDesenvolvimentoId] = useState<number | null>(null);
+  const [fechamentoId, setFechamentoId] = useState<number | null>(null);
 
   const periodo = c.periodo ?? "por_aula";
   const multiSelect = periodo !== "por_aula";
@@ -815,7 +865,7 @@ function PlanoDeAulaForm({
         <Field label="Momento inicial (Motivação / Diagnóstico)" hint="Aproximadamente 10–15 min — selecione uma técnica">
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
             {MOMENTOS_INICIAIS.map((m) => (
-              <MomentoInicialCard
+              <TecnicaCard
                 key={m.id}
                 item={m}
                 selected={momentoId === m.id}
@@ -832,16 +882,60 @@ function PlanoDeAulaForm({
               name="desenvolvimento_inicial"
               value={c.desenvolvimento_inicial ?? ""}
               onChange={(v) => set("desenvolvimento_inicial", v)}
-              placeholder="Descreva como a técnica será aplicada nesta aula..."
+              placeholder="Descreva como aplicará esta técnica nesta aula..."
               rows={3}
             />
           )}
         </Field>
-        <Field label="Desenvolvimento" hint="Atividade principal — Aproximadamente 25–30 min">
-          <TextArea name="desenvolvimento_principal" value={c.desenvolvimento_principal ?? ""} onChange={(v) => set("desenvolvimento_principal", v)} placeholder="Descrição detalhada das atividades de ensino e aprendizagem" rows={5} />
+        <Field label="Desenvolvimento" hint="Atividade principal — Aproximadamente 25–30 min — selecione uma técnica">
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {DESENVOLVIMENTO_OPTS.map((m) => (
+              <TecnicaCard
+                key={m.id}
+                item={m}
+                selected={desenvolvimentoId === m.id}
+                onSelect={(id) => {
+                  setDesenvolvimentoId(id);
+                  const found = DESENVOLVIMENTO_OPTS.find((x) => x.id === id);
+                  if (found) set("desenvolvimento_principal", `${found.nome} — ${found.descritor}`);
+                }}
+              />
+            ))}
+          </div>
+          {desenvolvimentoId !== null && (
+            <TextArea
+              name="desenvolvimento_principal"
+              value={c.desenvolvimento_principal ?? ""}
+              onChange={(v) => set("desenvolvimento_principal", v)}
+              placeholder="Descreva como aplicará esta técnica nesta aula..."
+              rows={4}
+            />
+          )}
         </Field>
-        <Field label="Fechamento / Sistematização" hint="Aproximadamente 10 min">
-          <TextArea name="desenvolvimento_fechamento" value={c.desenvolvimento_fechamento ?? ""} onChange={(v) => set("desenvolvimento_fechamento", v)} placeholder="Como a aula será encerrada? Síntese dos conteúdos?" rows={3} />
+        <Field label="Fechamento / Sistematização" hint="Aproximadamente 10 min — selecione uma técnica">
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {FECHAMENTO_OPTS.map((m) => (
+              <TecnicaCard
+                key={m.id}
+                item={m}
+                selected={fechamentoId === m.id}
+                onSelect={(id) => {
+                  setFechamentoId(id);
+                  const found = FECHAMENTO_OPTS.find((x) => x.id === id);
+                  if (found) set("desenvolvimento_fechamento", `${found.nome} — ${found.descritor}`);
+                }}
+              />
+            ))}
+          </div>
+          {fechamentoId !== null && (
+            <TextArea
+              name="desenvolvimento_fechamento"
+              value={c.desenvolvimento_fechamento ?? ""}
+              onChange={(v) => set("desenvolvimento_fechamento", v)}
+              placeholder="Descreva como aplicará esta técnica nesta aula..."
+              rows={3}
+            />
+          )}
         </Field>
       </Section>
 
