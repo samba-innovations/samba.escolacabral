@@ -207,6 +207,80 @@ function CheckboxList({
 
 // ─── Predefined options ───────────────────────────────────────────────────────
 
+const MOMENTOS_INICIAIS = [
+  { id:  1, nome: "Situação-problema contextualizada",  descritor: "Apresenta problema real para mobilizar conhecimentos prévios e levantar hipóteses." },
+  { id:  2, nome: "Pergunta geradora aberta",           descritor: "Propõe questão ampla que estimula reflexão e revela repertório inicial dos alunos." },
+  { id:  3, nome: "Brainstorm estruturado",             descritor: "Levanta ideias prévias dos alunos para identificar conhecimentos e concepções alternativas." },
+  { id:  4, nome: "Mapa conceitual inicial",            descritor: "Solicita organização de conceitos para diagnosticar relações cognitivas existentes." },
+  { id:  5, nome: "Quiz diagnóstico rápido",            descritor: "Aplica questões objetivas para verificar conhecimentos prévios de forma imediata." },
+  { id:  6, nome: "Estudo de caso curto",               descritor: "Apresenta situação concreta para análise, avaliando interpretação e raciocínio inicial." },
+  { id:  7, nome: "Demonstração discrepante",           descritor: "Exibe fenômeno inesperado para gerar conflito cognitivo e curiosidade investigativa." },
+  { id:  8, nome: "Levantamento de hipóteses",          descritor: "Incentiva previsões dos alunos para avaliar compreensão inicial de causalidade." },
+  { id:  9, nome: "Análise de erro",                   descritor: "Explora resolução incorreta para identificar entendimento e promover pensamento crítico." },
+  { id: 10, nome: "Conexão com o cotidiano",            descritor: "Relaciona o tema à vivência dos alunos para ativar conhecimentos prévios." },
+  { id: 11, nome: "Mini desafio imediato",              descritor: "Propõe problema rápido sem instrução prévia para observar estratégias espontâneas." },
+  { id: 12, nome: "Think-Pair-Share",                  descritor: "Estimula discussão em etapas para favorecer participação e explicitação do pensamento." },
+  { id: 13, nome: "Nuvem de palavras",                 descritor: "Coleta palavras-chave dos alunos para mapear repertório coletivo inicial." },
+  { id: 14, nome: "Classificação/organização",         descritor: "Solicita agrupamento de elementos para diagnosticar critérios de organização mental." },
+  { id: 15, nome: "Linha do tempo conceitual",         descritor: "Organiza eventos ou conceitos em sequência para avaliar noção de processo." },
+  { id: 16, nome: "Pergunta com posicionamento",       descritor: "Solicita opinião justificada para identificar capacidade argumentativa inicial." },
+  { id: 17, nome: "Uso de dados reais",                descritor: "Apresenta dados para interpretação inicial, verificando leitura e análise." },
+  { id: 18, nome: "Gamificação inicial",               descritor: "Introduz narrativa ou desafio para engajar e contextualizar a aprendizagem." },
+  { id: 19, nome: "Autoavaliação inicial",             descritor: "Incentiva o aluno a refletir sobre seu próprio nível de conhecimento." },
+  { id: 20, nome: "Integração com tecnologia",         descritor: "Utiliza recursos tecnológicos para despertar interesse e diagnosticar familiaridade." },
+];
+
+// ─── MomentoInicialCard ───────────────────────────────────────────────────────
+
+function MomentoInicialCard({
+  item,
+  selected,
+  onSelect,
+}: {
+  item: typeof MOMENTOS_INICIAIS[number];
+  selected: boolean;
+  onSelect: (id: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className={`border rounded-xl transition-all ${
+      selected ? "border-primary bg-primary/5" : "border-border/50 bg-background"
+    }`}>
+      <div className="flex items-start gap-3 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => onSelect(item.id)}
+          className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+            selected ? "bg-primary border-primary" : "border-border/60 hover:border-primary/60"
+          }`}
+        >
+          {selected && <Check size={11} className="text-primary-foreground" />}
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 cursor-pointer" onClick={() => onSelect(item.id)}>
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">
+                {item.id.toString().padStart(2, "0")}
+              </span>
+              <p className="text-sm font-bold text-foreground mt-0.5">{item.nome}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shrink-0"
+            >
+              <ChevronDown size={16} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+          {expanded && (
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{item.descritor}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const RECURSOS_OPTS = [
   "Livro didático",
   "Quadro branco",
@@ -424,6 +498,7 @@ function PlanoDeAulaForm({
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [habilidadeOpcoes, setHabilidadeOpcoes] = useState<string[]>([]);
   const [conteudoOpcoes, setConteudoOpcoes] = useState<string[]>([]);
+  const [momentoId, setMomentoId] = useState<number | null>(null);
 
   const periodo = c.periodo ?? "por_aula";
   const multiSelect = periodo !== "por_aula";
@@ -737,8 +812,30 @@ function PlanoDeAulaForm({
             <TextArea name="conteudo" value={c.conteudo ?? ""} onChange={(v) => set("conteudo", v)} placeholder="Conteúdos a serem trabalhados..." rows={4} />
           )}
         </Field>
-        <Field label="Momento inicial (Motivação / Diagnóstico)" hint="Aproximadamente 10–15 min">
-          <TextArea name="desenvolvimento_inicial" value={c.desenvolvimento_inicial ?? ""} onChange={(v) => set("desenvolvimento_inicial", v)} placeholder="Como a aula será iniciada? Qual estratégia de engajamento?" rows={3} />
+        <Field label="Momento inicial (Motivação / Diagnóstico)" hint="Aproximadamente 10–15 min — selecione uma técnica">
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {MOMENTOS_INICIAIS.map((m) => (
+              <MomentoInicialCard
+                key={m.id}
+                item={m}
+                selected={momentoId === m.id}
+                onSelect={(id) => {
+                  setMomentoId(id);
+                  const found = MOMENTOS_INICIAIS.find((x) => x.id === id);
+                  if (found) set("desenvolvimento_inicial", `${found.nome} — ${found.descritor}`);
+                }}
+              />
+            ))}
+          </div>
+          {momentoId !== null && (
+            <TextArea
+              name="desenvolvimento_inicial"
+              value={c.desenvolvimento_inicial ?? ""}
+              onChange={(v) => set("desenvolvimento_inicial", v)}
+              placeholder="Descreva como a técnica será aplicada nesta aula..."
+              rows={3}
+            />
+          )}
         </Field>
         <Field label="Desenvolvimento" hint="Atividade principal — Aproximadamente 25–30 min">
           <TextArea name="desenvolvimento_principal" value={c.desenvolvimento_principal ?? ""} onChange={(v) => set("desenvolvimento_principal", v)} placeholder="Descrição detalhada das atividades de ensino e aprendizagem" rows={5} />
