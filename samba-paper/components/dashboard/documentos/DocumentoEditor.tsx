@@ -326,28 +326,166 @@ function TecnicaDetailPanel({ item }: { item: TecnicaItem }) {
   );
 }
 
-const RECURSOS_OPTS = [
-  "Livro didático",
-  "Quadro branco",
-  "Projetor / Datashow",
-  "Caderno de atividades",
-  "Material impresso / Xerox",
-  "Material manipulável",
-  "Vídeo / Recurso audiovisual",
-  "Computador / Tablet",
-  "Acesso à internet",
+// ─── Recursos agrupados ───────────────────────────────────────────────────────
+
+type RecursoGrupo = { id: string; label: string; emoji: string; defaultOpen: boolean; items: string[] };
+
+const RECURSOS_GRUPOS: RecursoGrupo[] = [
+  {
+    id: "essenciais", label: "Essenciais", emoji: "📚", defaultOpen: true,
+    items: ["Livro didático", "Quadro branco", "Caderno de atividades", "Material impresso / Xerox", "Material manipulável", "Projetor / Datashow"],
+  },
+  {
+    id: "digitais", label: "Digitais", emoji: "💻", defaultOpen: false,
+    items: ["Computador / Tablet", "Acesso à internet", "AVA (Google Classroom / Moodle)", "Plataforma de quizzes (Kahoot / Quizizz)", "Simuladores digitais (PhET / Tinkercad)", "Softwares específicos (Python / GeoGebra / Excel)", "Mural colaborativo (Padlet / Jamboard)", "Documentos compartilhados (Google Docs)", "Inteligência Artificial (apoio à aprendizagem)", "Vídeo / Recurso audiovisual"],
+  },
+  {
+    id: "maker", label: "Experimental / Maker", emoji: "🔬", defaultOpen: false,
+    items: ["Kit Arduino / ESP / IoT", "Sensores e dispositivos eletrônicos", "Materiais recicláveis (prototipagem)", "Impressora 3D / prototipagem rápida", "Laboratório móvel / experimental"],
+  },
+  {
+    id: "colaborativos", label: "Colaborativos / Pedagógicos", emoji: "🤝", defaultOpen: false,
+    items: ["Cartões de discussão (flashcards)", "Jogos educativos", "Estudos de caso impressos/digitais", "Roteiros de investigação", "Sequências didáticas estruturadas", "Podcast / áudio educativo", "Infográficos"],
+  },
 ];
 
-const AVALIACAO_OPTS = [
-  "Observação e participação",
-  "Atividade em sala",
-  "Exercícios no caderno",
-  "Tarefa de casa",
-  "Trabalho em grupo",
-  "Apresentação oral",
-  "Avaliação escrita / Prova",
-  "Autoavaliação",
+// ─── Avaliação agrupada ───────────────────────────────────────────────────────
+
+type AvaliacaoGrupo = { id: string; label: string; emoji: string; defaultOpen: boolean; items: string[] };
+
+const AVALIACAO_GRUPOS: AvaliacaoGrupo[] = [
+  {
+    id: "diagnostica", label: "Diagnóstica", emoji: "🟡", defaultOpen: true,
+    items: ["Observação e participação", "Avaliação diagnóstica inicial", "Quiz diagnóstico rápido", "Levantamento de hipóteses", "Pergunta inicial / geradora"],
+  },
+  {
+    id: "formativa", label: "Formativa", emoji: "🔵", defaultOpen: false,
+    items: ["Atividade em sala", "Exercícios no caderno", "Feedback contínuo", "Avaliação processual", "Rubrica avaliativa"],
+  },
+  {
+    id: "ativa", label: "Ativa (protagonismo)", emoji: "🟢", defaultOpen: false,
+    items: ["Trabalho em grupo", "Avaliação por pares", "Autoavaliação guiada", "Coavaliação (aluno + professor)", "Avaliação por participação qualificada"],
+  },
+  {
+    id: "producao", label: "Por Produção", emoji: "🟣", defaultOpen: false,
+    items: ["Projeto / produto final", "Protótipo funcional", "Código / programa desenvolvido", "Relatório científico", "Portfólio (digital ou físico)", "Apresentação oral", "Vídeo produzido pelo aluno", "Mapa conceitual"],
+  },
+  {
+    id: "somativa", label: "Somativa", emoji: "🔴", defaultOpen: false,
+    items: ["Avaliação escrita / Prova", "Tarefa de casa"],
+  },
+  {
+    id: "rapida", label: "Rápida (tempo real)", emoji: "⚡", defaultOpen: false,
+    items: ["Exit ticket", "Pergunta-chave ao final da aula", "Votação interativa", "Mini quiz diagnóstico contínuo"],
+  },
 ];
+
+// Flat lists para forms simples que usam CheckboxList
+const RECURSOS_OPTS = RECURSOS_GRUPOS.flatMap((g) => g.items);
+const AVALIACAO_OPTS = AVALIACAO_GRUPOS.flatMap((g) => g.items);
+
+// ─── Pacotes prontos ──────────────────────────────────────────────────────────
+
+const PACOTES_PRONTOS = [
+  {
+    id: "expositiva", label: "📘 Expositiva",
+    recursos: ["Livro didático", "Quadro branco", "Projetor / Datashow", "Material impresso / Xerox"],
+    avaliacao: ["Observação e participação", "Atividade em sala", "Exercícios no caderno"],
+  },
+  {
+    id: "tecnologia", label: "💻 Tecnologia",
+    recursos: ["Computador / Tablet", "Acesso à internet", "Plataforma de quizzes (Kahoot / Quizizz)", "AVA (Google Classroom / Moodle)"],
+    avaliacao: ["Quiz diagnóstico rápido", "Exit ticket", "Avaliação processual"],
+  },
+  {
+    id: "investigativa", label: "🔬 Investigativa",
+    recursos: ["Roteiros de investigação", "Material manipulável", "Caderno de atividades"],
+    avaliacao: ["Levantamento de hipóteses", "Avaliação processual", "Relatório científico"],
+  },
+  {
+    id: "maker", label: "🚀 Maker",
+    recursos: ["Kit Arduino / ESP / IoT", "Materiais recicláveis (prototipagem)", "Laboratório móvel / experimental"],
+    avaliacao: ["Protótipo funcional", "Projeto / produto final", "Avaliação por pares"],
+  },
+  {
+    id: "colaborativa", label: "🤝 Colaborativa",
+    recursos: ["Mural colaborativo (Padlet / Jamboard)", "Documentos compartilhados (Google Docs)", "Jogos educativos"],
+    avaliacao: ["Trabalho em grupo", "Avaliação por pares", "Coavaliação (aluno + professor)"],
+  },
+];
+
+// Mapeamento técnica de desenvolvimento → pacote sugerido
+const DESENVOLVIMENTO_TO_PACOTE: Record<number, string> = {
+  1: "expositiva", 2: "investigativa", 3: "maker", 4: "investigativa",
+  5: "maker", 6: "expositiva", 7: "tecnologia", 8: "colaborativa",
+  9: "tecnologia", 10: "colaborativa", 11: "expositiva", 12: "tecnologia",
+  13: "tecnologia", 14: "maker", 15: "colaborativa", 16: "colaborativa",
+  17: "expositiva", 18: "tecnologia", 19: "investigativa", 20: "tecnologia",
+};
+
+// ─── GrupoCheckbox ────────────────────────────────────────────────────────────
+
+function GrupoCheckbox({
+  grupos,
+  value,
+  onChange,
+}: {
+  grupos: RecursoGrupo[] | AvaliacaoGrupo[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [openIds, setOpenIds] = useState<Set<string>>(
+    new Set(grupos.filter((g) => g.defaultOpen).map((g) => g.id))
+  );
+  const selected = new Set(value ? value.split(", ").map((s) => s.trim()).filter(Boolean) : []);
+
+  function toggle(item: string) {
+    const s = new Set(selected);
+    s.has(item) ? s.delete(item) : s.add(item);
+    onChange([...s].join(", "));
+  }
+
+  function toggleGrupo(id: string) {
+    setOpenIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {grupos.map((g) => {
+        const count = g.items.filter((i) => selected.has(i)).length;
+        const isOpen = openIds.has(g.id);
+        return (
+          <div key={g.id} className="border border-border/40 rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleGrupo(g.id)}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span>{g.emoji}</span>
+                <span className="text-xs font-bold text-foreground">{g.label}</span>
+                {count > 0 && (
+                  <span className="text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 font-black">{count}</span>
+                )}
+              </div>
+              <ChevronDown size={13} className={`text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+            {isOpen && (
+              <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-2 bg-background">
+                {g.items.map((item) => (
+                  <label key={item} className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={selected.has(item)} onChange={() => toggle(item)} className="w-3.5 h-3.5 rounded accent-primary cursor-pointer shrink-0" />
+                    <span className="text-xs text-foreground group-hover:text-primary transition-colors leading-snug">{item}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function parseCodeList(raw: string | null): string[] {
   if (!raw) return [];
@@ -792,33 +930,39 @@ function PlanoDeAulaForm({
   // ── Step 1: Período + Identificação ──────────────────────────────────────────
   if (step === 1) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <NavBar />
-        <Section title="Tipo de plano">
-          <div className="grid grid-cols-2 gap-3">
+
+        {/* Período — pills compactos */}
+        <div>
+          <p className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-2">Tipo de plano</p>
+          <div className="flex flex-wrap gap-2">
             {PERIODO_OPTS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => set("periodo", opt.value)}
-                className={`text-left px-4 py-3 rounded-xl border-2 transition-all ${
+                title={opt.desc}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
                   periodo === opt.value
-                    ? "border-primary bg-primary/5"
-                    : "border-border/40 bg-background hover:border-primary/40"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border/50 bg-background text-foreground hover:border-primary/60"
                 }`}
               >
-                <p className="font-bold text-sm text-foreground">{opt.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                {opt.label}
               </button>
             ))}
           </div>
-        </Section>
+          {periodo && <p className="text-xs text-muted-foreground mt-1">{PERIODO_OPTS.find(p => p.value === periodo)?.desc}</p>}
+        </div>
 
-        <Section title="Turma(s)">
-          <p className="text-xs text-muted-foreground -mt-2 mb-2">
-            Selecione uma ou mais turmas (mesmo plano para 1ªA, 1ªB, 1ªC…)
+        {/* Turmas */}
+        <div>
+          <p className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-2">
+            Turma(s)
+            {nivelLabel && <span className="ml-2 text-primary font-semibold normal-case tracking-normal">{nivelLabel}</span>}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {classes.map((cl) => {
               const sel = selectedTurmas.includes(cl.name);
               return (
@@ -826,7 +970,7 @@ function PlanoDeAulaForm({
                   key={cl.id}
                   type="button"
                   onClick={() => toggleTurma(cl.name)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
+                  className={`px-2.5 py-1 rounded-full text-xs font-bold border-2 transition-all active:scale-95 ${
                     sel
                       ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30"
                       : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"
@@ -837,13 +981,12 @@ function PlanoDeAulaForm({
               );
             })}
           </div>
-          {nivelLabel && (
-            <p className="text-xs text-primary font-semibold mt-2">{nivelLabel}</p>
-          )}
-        </Section>
+        </div>
 
-        <Section title="Disciplina, Bimestre e Data">
-          <div className="grid grid-cols-2 gap-4">
+        {/* Disciplina + Bimestre + Data numa linha */}
+        <div>
+          <p className="text-xs font-black text-muted-foreground uppercase tracking-wider mb-2">Disciplina, Bimestre e Data</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Field label="Disciplina">
               <SelectInput
                 name="disciplina"
@@ -852,16 +995,11 @@ function PlanoDeAulaForm({
                 options={disciplines
                   .filter((d) => {
                     if (!selectedClass) return true;
-                    // EM: só base_comum sem "ciências" e sem componentes exclusivos de EF
-                    // EF: exclui disciplinas exclusivas de EM (sem serie de EM no nome)
-                    // Usa disciplineType: "base_comum" e "itinerario" para EM, só "base_comum" para EF
-                    if (selectedClass.ciclo === "medio" && d.type === "base_comum") return true;
-                    if (selectedClass.ciclo === "medio" && d.type === "itinerario") return true;
-                    if (selectedClass.ciclo === "fundamental" && d.type === "base_comum") return true;
-                    return false;
+                    if (selectedClass.ciclo === "medio") return d.type === "base_comum" || d.type === "itinerario";
+                    return d.type === "base_comum";
                   })
                   .map((d) => ({ value: d.name, label: d.name }))}
-                placeholder="Selecione a disciplina"
+                placeholder="Selecione"
               />
             </Field>
             <Field label="Bimestre">
@@ -870,14 +1008,14 @@ function PlanoDeAulaForm({
                 value={c.bimestre ?? ""}
                 onChange={(v) => { set("bimestre", v); loadAulas(primaryTurma, c.disciplina ?? "", v); }}
                 options={BIMESTRES_OPTS}
-                placeholder="Selecione o bimestre"
+                placeholder="Selecione"
               />
             </Field>
-            <Field label="Data" hint="Digite ou clique no calendário">
+            <Field label="Data">
               <DatePicker value={c.data ?? ""} onChange={(v) => set("data", v)} />
             </Field>
           </div>
-        </Section>
+        </div>
       </div>
     );
   }
@@ -1096,16 +1234,51 @@ function PlanoDeAulaForm({
       </Section>
 
       <Section title="Recursos e Avaliação">
+        {/* Pacotes prontos */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">
+            Início rápido — clique para preencher automaticamente:
+            {desenvolvimentoId && DESENVOLVIMENTO_TO_PACOTE[desenvolvimentoId] && (
+              <span className="ml-1 text-primary font-semibold">
+                sugestão baseada na técnica selecionada
+              </span>
+            )}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {PACOTES_PRONTOS.map((p) => {
+              const sugerido = desenvolvimentoId ? DESENVOLVIMENTO_TO_PACOTE[desenvolvimentoId] === p.id : false;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    set("recursos_materiais", p.recursos.join(", "));
+                    set("avaliacao", p.avaliacao.join(", "));
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all active:scale-95 ${
+                    sugerido
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30 ring-2 ring-primary/20"
+                      : "border-border/50 bg-background text-foreground hover:border-primary/60 hover:bg-primary/5"
+                  }`}
+                >
+                  {p.label}
+                  {sugerido && " ★"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <Field label="Recursos e materiais">
-          <CheckboxList
-            options={RECURSOS_OPTS}
+          <GrupoCheckbox
+            grupos={RECURSOS_GRUPOS}
             value={c.recursos_materiais ?? ""}
             onChange={(v) => set("recursos_materiais", v)}
           />
         </Field>
         <Field label="Avaliação">
-          <CheckboxList
-            options={AVALIACAO_OPTS}
+          <GrupoCheckbox
+            grupos={AVALIACAO_GRUPOS}
             value={c.avaliacao ?? ""}
             onChange={(v) => set("avaliacao", v)}
           />
@@ -1233,10 +1406,10 @@ function GuiaAprendizagemForm({
           )}
         </Field>
         <Field label="Recursos e materiais">
-          <CheckboxList options={RECURSOS_OPTS} value={c.recursos ?? ""} onChange={(v) => set("recursos", v)} />
+          <GrupoCheckbox grupos={RECURSOS_GRUPOS} value={c.recursos ?? ""} onChange={(v) => set("recursos", v)} />
         </Field>
         <Field label="Avaliação bimestral">
-          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
+          <GrupoCheckbox grupos={AVALIACAO_GRUPOS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Referências">
           <TextArea name="referencias" value={c.referencias ?? ""} onChange={(v) => set("referencias", v)} placeholder="Livros, sites, materiais de apoio utilizados" rows={2} />
@@ -1399,10 +1572,10 @@ function PlanoEletivaForm({
           )}
         </Field>
         <Field label="Avaliação">
-          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
+          <GrupoCheckbox grupos={AVALIACAO_GRUPOS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Materiais e recursos">
-          <CheckboxList options={RECURSOS_OPTS} value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} />
+          <GrupoCheckbox grupos={RECURSOS_GRUPOS} value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} />
         </Field>
       </Section>
     </>
@@ -1480,10 +1653,10 @@ function PlanoEmaForm({
           )}
         </Field>
         <Field label="Avaliação">
-          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
+          <GrupoCheckbox grupos={AVALIACAO_GRUPOS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Materiais e equipamentos">
-          <CheckboxList options={RECURSOS_OPTS} value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} />
+          <GrupoCheckbox grupos={RECURSOS_GRUPOS} value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} />
         </Field>
       </Section>
     </>
@@ -1555,7 +1728,7 @@ function ProjetoForm({
           <TextArea name="produto_final" value={c.produto_final ?? ""} onChange={(v) => set("produto_final", v)} placeholder="O que será produzido/entregue? (Cartaz, vídeo, exposição, relatório...)" rows={2} />
         </Field>
         <Field label="Avaliação">
-          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
+          <GrupoCheckbox grupos={AVALIACAO_GRUPOS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Apresentação / Culminância">
           <TextArea name="apresentacao" value={c.apresentacao ?? ""} onChange={(v) => set("apresentacao", v)} placeholder="Como e quando o projeto será apresentado à comunidade?" rows={2} />
