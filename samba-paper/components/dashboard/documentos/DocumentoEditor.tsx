@@ -294,17 +294,19 @@ function TecnicaBadge({
       <button
         type="button"
         onClick={() => onSelect(item.id)}
-        className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
+        className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap active:scale-95 ${
           selected
             ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30"
             : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"
         }`}
       >
-        <span className="text-muted-foreground mr-1 font-black">{item.id.toString().padStart(2, "0")}</span>
+        <span className={`mr-1 font-black text-[10px] ${selected ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+          {item.id.toString().padStart(2, "0")}
+        </span>
         {item.nome}
       </button>
-      {/* Tooltip */}
-      <div className="absolute bottom-full left-0 mb-2 hidden group-hover/tb:flex flex-col z-[100] pointer-events-none w-64">
+      {/* Tooltip — desktop only */}
+      <div className="absolute bottom-full left-0 mb-2 hidden md:group-hover/tb:flex flex-col z-[100] pointer-events-none w-64">
         <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-2xl text-xs drop-shadow-xl">
           <p className="font-bold text-foreground mb-0.5">{item.nome}</p>
           <p className="text-muted-foreground leading-relaxed">{item.descritor}</p>
@@ -561,7 +563,7 @@ function AulaBadge({
       <button
         type="button"
         onClick={() => onToggle(aula.id)}
-        className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all whitespace-nowrap ${
+        className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all whitespace-nowrap active:scale-95 ${
           selected
             ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30"
             : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"
@@ -570,8 +572,8 @@ function AulaBadge({
         {multiSelect && selected && <span className="mr-1">✓</span>}
         Aula {aula.aulaNum}
       </button>
-      {/* Tooltip on hover */}
-      <div className="absolute bottom-full left-0 mb-2 hidden group-hover/badge:flex flex-col z-[100] pointer-events-none w-56">
+      {/* Tooltip on hover — desktop only */}
+      <div className="absolute bottom-full left-0 mb-2 hidden md:group-hover/badge:flex flex-col z-[100] pointer-events-none w-56">
         <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-2xl text-xs drop-shadow-xl">
           <p className="font-bold text-foreground">{aula.titulo}</p>
           {aula.unidadeTematica && (
@@ -700,7 +702,7 @@ function PlanoDeAulaForm({
       : false;
 
     return (
-      <div className="sticky top-0 z-20 -mx-6 px-6 py-2.5 bg-card/95 backdrop-blur-sm border-b border-border/20 flex items-center gap-3 mb-5">
+      <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-card/95 backdrop-blur-sm border-b border-border/20 flex items-center gap-2 sm:gap-3 mb-5">
         <StepIndicator step={step} onGoTo={(s) => s < step && setStep(s)} />
         <div className="flex gap-2 ml-auto shrink-0">
           {step > 1 && (
@@ -1183,7 +1185,7 @@ function GuiaAprendizagemForm({
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Disciplina">
-            <SelectInput name="disciplina" value={c.disciplina ?? ""} onChange={(v) => { set("disciplina", v); autoFillBimestre(primaryTurma, v, c.bimestre ?? ""); }} options={disciplines.map((d) => ({ value: d.name, label: d.name }))} placeholder="Selecione a disciplina" />
+            <SelectInput name="disciplina" value={c.disciplina ?? ""} onChange={(v) => { set("disciplina", v); autoFillBimestre(primaryTurma, v, c.bimestre ?? ""); }} options={filteredDisciplines.map((d) => ({ value: d.name, label: d.name }))} placeholder="Selecione a disciplina" />
           </Field>
           <Field label="Bimestre">
             <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => { set("bimestre", v); autoFillBimestre(primaryTurma, c.disciplina ?? "", v); }} options={BIMESTRES_OPTS} placeholder="Selecione" />
@@ -1659,7 +1661,7 @@ export function DocumentoEditor({ doc, userName, classes, disciplines, students 
   return (
     <div className="space-y-8">
       {/* Form */}
-      <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-8">
+      <div className="bg-card border border-border/50 rounded-2xl p-4 sm:p-6 space-y-8">
         {doc.type === "plano_de_aula" && <PlanoDeAulaForm {...formProps} />}
         {doc.type === "guia_de_aprendizagem" && <GuiaAprendizagemForm {...formProps} />}
         {doc.type === "pei" && <PeiForm {...formProps} />}

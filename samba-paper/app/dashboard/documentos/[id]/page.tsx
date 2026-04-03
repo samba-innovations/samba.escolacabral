@@ -28,7 +28,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
   ]);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/documentos" className="p-2 rounded-xl hover:bg-muted transition-colors">
           <ArrowLeft size={16} className="text-muted-foreground" />
