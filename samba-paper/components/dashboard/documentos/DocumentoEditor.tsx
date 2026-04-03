@@ -1108,6 +1108,16 @@ function GuiaAprendizagemForm({
   disciplines: Props["disciplines"];
 }) {
   const [loadingAulas, setLoadingAulas] = useState(false);
+  const [estrategiaId, setEstrategiaId] = useState<number | null>(null);
+  const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : c.turma ? [c.turma] : [];
+
+  function toggleTurma(name: string) {
+    const prev = selectedTurmas;
+    const next = prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name];
+    set("turma", next[0] ?? "");
+    set("turmas", next.join(", "));
+    if (next[0] !== prev[0]) autoFillBimestre(next[0] ?? "", c.disciplina ?? "", c.bimestre ?? "");
+  }
 
   async function autoFillBimestre(turmaName: string, disciplina: string, bimStr: string) {
     const cl = classes.find((x) => x.name === turmaName);
@@ -1118,7 +1128,6 @@ function GuiaAprendizagemForm({
     try {
       const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplinaNome, Number(bimStr));
       if (rows.length === 0) return;
-      // Aggregate all aulas into the guia fields
       const habs = rows.map((a) => [a.habilidadeCodigo, a.habilidadeTexto].filter(Boolean).join(" ")).filter(Boolean).join("\n");
       const conts = rows.map((a) => a.conteudo).filter(Boolean).join("\n");
       const objs = rows.map((a) => a.objetivos).filter(Boolean).join("\n");
@@ -1131,18 +1140,30 @@ function GuiaAprendizagemForm({
     }
   }
 
+  const primaryTurma = selectedTurmas[0] ?? "";
+
   return (
     <>
       <Section title="Identificação">
+        <Field label="Turma(s)" hint="Selecione uma ou mais turmas">
+          <div className="flex flex-wrap gap-2">
+            {classes.map((cl) => {
+              const sel = selectedTurmas.includes(cl.name);
+              return (
+                <button key={cl.id} type="button" onClick={() => toggleTurma(cl.name)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${sel ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30" : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"}`}>
+                  {cl.name}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Turma">
-            <SelectInput name="turma" value={c.turma ?? ""} onChange={(v) => { set("turma", v); autoFillBimestre(v, c.disciplina ?? "", c.bimestre ?? ""); }} options={classes.map((cl) => ({ value: cl.name, label: cl.name }))} placeholder="Selecione a turma" />
-          </Field>
           <Field label="Disciplina">
-            <SelectInput name="disciplina" value={c.disciplina ?? ""} onChange={(v) => { set("disciplina", v); autoFillBimestre(c.turma ?? "", v, c.bimestre ?? ""); }} options={disciplines.map((d) => ({ value: d.name, label: d.name }))} placeholder="Selecione a disciplina" />
+            <SelectInput name="disciplina" value={c.disciplina ?? ""} onChange={(v) => { set("disciplina", v); autoFillBimestre(primaryTurma, v, c.bimestre ?? ""); }} options={disciplines.map((d) => ({ value: d.name, label: d.name }))} placeholder="Selecione a disciplina" />
           </Field>
           <Field label="Bimestre">
-            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => { set("bimestre", v); autoFillBimestre(c.turma ?? "", c.disciplina ?? "", v); }} options={BIMESTRES_OPTS} placeholder="Selecione" />
+            <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => { set("bimestre", v); autoFillBimestre(primaryTurma, c.disciplina ?? "", v); }} options={BIMESTRES_OPTS} placeholder="Selecione" />
           </Field>
           <Field label="Ano letivo">
             <TextInput name="ano_letivo" value={c.ano_letivo ?? "2026"} onChange={(v) => set("ano_letivo", v)} placeholder="2026" />
@@ -1151,7 +1172,7 @@ function GuiaAprendizagemForm({
         {loadingAulas && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 size={14} className="animate-spin" />
-            Carregando dados do currículo...
+            Carregando dados do currículo…
           </div>
         )}
       </Section>
@@ -1163,23 +1184,34 @@ function GuiaAprendizagemForm({
         <Field label="Competências gerais (BNCC)">
           <TextArea name="competencias" value={c.competencias ?? ""} onChange={(v) => set("competencias", v)} placeholder="Competências gerais que serão desenvolvidas..." rows={3} />
         </Field>
-        <Field label="Habilidades específicas" hint="Códigos e descrições das habilidades abordadas">
+        <Field label="Habilidades específicas" hint="Preenchido automaticamente ao selecionar turma, disciplina e bimestre">
           <TextArea name="habilidades" value={c.habilidades ?? ""} onChange={(v) => set("habilidades", v)} placeholder="(EF09MA06) Compreender funções como relações de dependência..." rows={4} />
         </Field>
-        <Field label="Conteúdos programáticos">
+        <Field label="Conteúdos programáticos" hint="Preenchido automaticamente">
           <TextArea name="conteudos" value={c.conteudos ?? ""} onChange={(v) => set("conteudos", v)} placeholder="Liste os conteúdos a serem trabalhados no bimestre" rows={4} />
         </Field>
       </Section>
 
       <Section title="Metodologia e Avaliação">
-        <Field label="Estratégias didáticas">
-          <TextArea name="estrategias" value={c.estrategias ?? ""} onChange={(v) => set("estrategias", v)} placeholder="Quais metodologias e estratégias serão utilizadas?" rows={4} />
+        <Field label="Estratégias didáticas" hint="Passe o mouse para ver detalhes, clique para selecionar">
+          <div className="flex flex-wrap gap-2">
+            {DESENVOLVIMENTO_OPTS.map((m) => (
+              <TecnicaBadge key={m.id} item={m} selected={estrategiaId === m.id}
+                onSelect={(id) => { setEstrategiaId(id); const f = DESENVOLVIMENTO_OPTS.find((x) => x.id === id); if (f) set("estrategias", `${f.nome} — ${f.descritor}`); }} />
+            ))}
+          </div>
+          {estrategiaId !== null && (
+            <>
+              <TecnicaDetailPanel item={DESENVOLVIMENTO_OPTS.find((x) => x.id === estrategiaId)!} />
+              <TextArea name="estrategias" value={c.estrategias ?? ""} onChange={(v) => set("estrategias", v)} placeholder="Descreva como aplicará esta estratégia no bimestre…" rows={3} />
+            </>
+          )}
         </Field>
         <Field label="Recursos e materiais">
-          <TextArea name="recursos" value={c.recursos ?? ""} onChange={(v) => set("recursos", v)} placeholder="Livro didático, plataformas digitais, materiais de apoio..." rows={2} />
+          <CheckboxList options={RECURSOS_OPTS} value={c.recursos ?? ""} onChange={(v) => set("recursos", v)} />
         </Field>
         <Field label="Avaliação bimestral">
-          <TextArea name="avaliacao" value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} placeholder="Como os alunos serão avaliados? (Provas, trabalhos, participação...)" rows={3} />
+          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Referências">
           <TextArea name="referencias" value={c.referencias ?? ""} onChange={(v) => set("referencias", v)} placeholder="Livros, sites, materiais de apoio utilizados" rows={2} />
@@ -1228,7 +1260,7 @@ function PeiForm({
           </Field>
         </div>
         <Field label="Data de elaboração">
-          <TextInput name="data_elaboracao" value={c.data_elaboracao ?? ""} onChange={(v) => set("data_elaboracao", v)} placeholder="dd/mm/aaaa" />
+          <DatePicker value={c.data_elaboracao ?? ""} onChange={(v) => set("data_elaboracao", v)} />
         </Field>
       </Section>
 
@@ -1261,7 +1293,7 @@ function PeiForm({
           <TextArea name="profissionais" value={c.profissionais ?? ""} onChange={(v) => set("profissionais", v)} placeholder="Psicólogo, fonoaudiólogo, terapeuta ocupacional..." rows={2} />
         </Field>
         <Field label="Data da próxima revisão">
-          <TextInput name="proxima_revisao" value={c.proxima_revisao ?? ""} onChange={(v) => set("proxima_revisao", v)} placeholder="dd/mm/aaaa" />
+          <DatePicker value={c.proxima_revisao ?? ""} onChange={(v) => set("proxima_revisao", v)} />
         </Field>
       </Section>
     </>
@@ -1277,16 +1309,34 @@ function PlanoEletivaForm({
   set: (k: string, v: string) => void;
   classes: Props["classes"];
 }) {
+  const [metodologiaId, setMetodologiaId] = useState<number | null>(null);
+  const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : [];
+
+  function toggleTurma(name: string) {
+    const next = selectedTurmas.includes(name) ? selectedTurmas.filter((x) => x !== name) : [...selectedTurmas, name];
+    set("turmas", next.join(", "));
+  }
+
   return (
     <>
       <Section title="Identificação">
+        <Field label="Nome da Eletiva">
+          <TextInput name="nome_eletiva" value={c.nome_eletiva ?? ""} onChange={(v) => set("nome_eletiva", v)} placeholder="Ex: Programação Criativa" />
+        </Field>
+        <Field label="Turma(s) atendida(s)" hint="Selecione uma ou mais turmas">
+          <div className="flex flex-wrap gap-2">
+            {classes.map((cl) => {
+              const sel = selectedTurmas.includes(cl.name);
+              return (
+                <button key={cl.id} type="button" onClick={() => toggleTurma(cl.name)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${sel ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30" : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"}`}>
+                  {cl.name}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Nome da Eletiva">
-            <TextInput name="nome_eletiva" value={c.nome_eletiva ?? ""} onChange={(v) => set("nome_eletiva", v)} placeholder="Ex: Programação Criativa" />
-          </Field>
-          <Field label="Turma(s) atendida(s)">
-            <TextInput name="turmas" value={c.turmas ?? ""} onChange={(v) => set("turmas", v)} placeholder="Ex: 1ºA, 1ºB" />
-          </Field>
           <Field label="Semestre">
             <SelectInput name="semestre" value={c.semestre ?? ""} onChange={(v) => set("semestre", v)} options={[{ value: "1º Semestre", label: "1º Semestre" }, { value: "2º Semestre", label: "2º Semestre" }]} placeholder="Selecione" />
           </Field>
@@ -1309,14 +1359,25 @@ function PlanoEletivaForm({
       </Section>
 
       <Section title="Metodologia e Avaliação">
-        <Field label="Metodologia">
-          <TextArea name="metodologia" value={c.metodologia ?? ""} onChange={(v) => set("metodologia", v)} placeholder="Como as aulas serão conduzidas? Quais estratégias?" rows={3} />
+        <Field label="Metodologia" hint="Passe o mouse para ver detalhes, clique para selecionar">
+          <div className="flex flex-wrap gap-2">
+            {DESENVOLVIMENTO_OPTS.map((m) => (
+              <TecnicaBadge key={m.id} item={m} selected={metodologiaId === m.id}
+                onSelect={(id) => { setMetodologiaId(id); const f = DESENVOLVIMENTO_OPTS.find((x) => x.id === id); if (f) set("metodologia", `${f.nome} — ${f.descritor}`); }} />
+            ))}
+          </div>
+          {metodologiaId !== null && (
+            <>
+              <TecnicaDetailPanel item={DESENVOLVIMENTO_OPTS.find((x) => x.id === metodologiaId)!} />
+              <TextArea name="metodologia" value={c.metodologia ?? ""} onChange={(v) => set("metodologia", v)} placeholder="Descreva como aplicará esta metodologia…" rows={3} />
+            </>
+          )}
         </Field>
         <Field label="Avaliação">
-          <TextArea name="avaliacao" value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} placeholder="Como os alunos serão avaliados?" rows={3} />
+          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Materiais e recursos">
-          <TextArea name="materiais" value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} placeholder="Materiais, equipamentos, espaços necessários" rows={2} />
+          <CheckboxList options={RECURSOS_OPTS} value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} />
         </Field>
       </Section>
     </>
@@ -1332,6 +1393,14 @@ function PlanoEmaForm({
   set: (k: string, v: string) => void;
   classes: Props["classes"];
 }) {
+  const [metodologiaId, setMetodologiaId] = useState<number | null>(null);
+  const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : [];
+
+  function toggleTurma(name: string) {
+    const next = selectedTurmas.includes(name) ? selectedTurmas.filter((x) => x !== name) : [...selectedTurmas, name];
+    set("turmas", next.join(", "));
+  }
+
   return (
     <>
       <Section title="Identificação">
@@ -1342,13 +1411,23 @@ function PlanoEmaForm({
           <Field label="Bimestre">
             <SelectInput name="bimestre" value={c.bimestre ?? ""} onChange={(v) => set("bimestre", v)} options={BIMESTRES_OPTS} placeholder="Selecione" />
           </Field>
-          <Field label="Turmas atendidas">
-            <TextInput name="turmas" value={c.turmas ?? ""} onChange={(v) => set("turmas", v)} placeholder="Ex: 1ºA, 1ºB, 2ºA" />
-          </Field>
           <Field label="Carga horária semanal">
             <TextInput name="carga_horaria" value={c.carga_horaria ?? ""} onChange={(v) => set("carga_horaria", v)} placeholder="Ex: 2 aulas / semana" />
           </Field>
         </div>
+        <Field label="Turmas atendidas" hint="Selecione uma ou mais turmas">
+          <div className="flex flex-wrap gap-2">
+            {classes.map((cl) => {
+              const sel = selectedTurmas.includes(cl.name);
+              return (
+                <button key={cl.id} type="button" onClick={() => toggleTurma(cl.name)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${sel ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30" : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"}`}>
+                  {cl.name}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
         <Field label="Tema / Projeto do bimestre">
           <TextInput name="tema" value={c.tema ?? ""} onChange={(v) => set("tema", v)} placeholder="Ex: Atletismo Paraolímpico / Canto Coral / Grafite Urbano" />
         </Field>
@@ -1361,14 +1440,25 @@ function PlanoEmaForm({
         <Field label="Conteúdos">
           <TextArea name="conteudos" value={c.conteudos ?? ""} onChange={(v) => set("conteudos", v)} placeholder="Quais conteúdos específicos serão trabalhados?" rows={4} />
         </Field>
-        <Field label="Metodologia">
-          <TextArea name="metodologia" value={c.metodologia ?? ""} onChange={(v) => set("metodologia", v)} placeholder="Como as atividades serão organizadas?" rows={3} />
+        <Field label="Metodologia" hint="Passe o mouse para ver detalhes, clique para selecionar">
+          <div className="flex flex-wrap gap-2">
+            {DESENVOLVIMENTO_OPTS.map((m) => (
+              <TecnicaBadge key={m.id} item={m} selected={metodologiaId === m.id}
+                onSelect={(id) => { setMetodologiaId(id); const f = DESENVOLVIMENTO_OPTS.find((x) => x.id === id); if (f) set("metodologia", `${f.nome} — ${f.descritor}`); }} />
+            ))}
+          </div>
+          {metodologiaId !== null && (
+            <>
+              <TecnicaDetailPanel item={DESENVOLVIMENTO_OPTS.find((x) => x.id === metodologiaId)!} />
+              <TextArea name="metodologia" value={c.metodologia ?? ""} onChange={(v) => set("metodologia", v)} placeholder="Descreva como aplicará esta metodologia…" rows={3} />
+            </>
+          )}
         </Field>
         <Field label="Avaliação">
-          <TextArea name="avaliacao" value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} placeholder="Como será acompanhado o desenvolvimento dos alunos?" rows={3} />
+          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Materiais e equipamentos">
-          <TextArea name="materiais" value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} placeholder="Instrumentos, equipamentos esportivos, materiais artísticos..." rows={2} />
+          <CheckboxList options={RECURSOS_OPTS} value={c.materiais ?? ""} onChange={(v) => set("materiais", v)} />
         </Field>
       </Section>
     </>
@@ -1379,30 +1469,45 @@ function ProjetoForm({
   c,
   set,
   classes,
-  disciplines,
 }: {
   c: Record<string, string>;
   set: (k: string, v: string) => void;
   classes: Props["classes"];
-  disciplines: Props["disciplines"];
 }) {
+  const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : [];
+
+  function toggleTurma(name: string) {
+    const next = selectedTurmas.includes(name) ? selectedTurmas.filter((x) => x !== name) : [...selectedTurmas, name];
+    set("turmas", next.join(", "));
+  }
+
   return (
     <>
       <Section title="Identificação do Projeto">
         <Field label="Título do projeto">
           <TextInput name="titulo" value={c.titulo ?? ""} onChange={(v) => set("titulo", v)} placeholder="Ex: Projeto Água: Fonte de Vida" />
         </Field>
+        <Field label="Turmas participantes" hint="Selecione uma ou mais turmas">
+          <div className="flex flex-wrap gap-2">
+            {classes.map((cl) => {
+              const sel = selectedTurmas.includes(cl.name);
+              return (
+                <button key={cl.id} type="button" onClick={() => toggleTurma(cl.name)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${sel ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30" : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"}`}>
+                  {cl.name}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Turmas participantes">
-            <TextInput name="turmas" value={c.turmas ?? ""} onChange={(v) => set("turmas", v)} placeholder="Ex: 2ºA, 2ºB, 3ºA" />
-          </Field>
           <Field label="Período de realização">
             <TextInput name="periodo" value={c.periodo ?? ""} onChange={(v) => set("periodo", v)} placeholder="Ex: Março a Junho de 2025" />
           </Field>
+          <Field label="Disciplinas envolvidas">
+            <TextInput name="disciplinas" value={c.disciplinas ?? ""} onChange={(v) => set("disciplinas", v)} placeholder="Ex: Ciências, Português, Matemática" />
+          </Field>
         </div>
-        <Field label="Disciplinas envolvidas" hint="Componentes curriculares que participarão do projeto">
-          <TextInput name="disciplinas" value={c.disciplinas ?? ""} onChange={(v) => set("disciplinas", v)} placeholder="Ex: Ciências, Português, Matemática" />
-        </Field>
       </Section>
 
       <Section title="Proposta">
@@ -1425,7 +1530,7 @@ function ProjetoForm({
           <TextArea name="produto_final" value={c.produto_final ?? ""} onChange={(v) => set("produto_final", v)} placeholder="O que será produzido/entregue? (Cartaz, vídeo, exposição, relatório...)" rows={2} />
         </Field>
         <Field label="Avaliação">
-          <TextArea name="avaliacao" value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} placeholder="Como o projeto e os alunos serão avaliados?" rows={3} />
+          <CheckboxList options={AVALIACAO_OPTS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
         <Field label="Apresentação / Culminância">
           <TextArea name="apresentacao" value={c.apresentacao ?? ""} onChange={(v) => set("apresentacao", v)} placeholder="Como e quando o projeto será apresentado à comunidade?" rows={2} />
@@ -1451,7 +1556,7 @@ function PdiForm({
             <TextInput name="periodo" value={c.periodo ?? ""} onChange={(v) => set("periodo", v)} placeholder={`Ex: 1º Semestre ${ANO_LETIVO}`} />
           </Field>
           <Field label="Data de elaboração">
-            <TextInput name="data_elaboracao" value={c.data_elaboracao ?? ""} onChange={(v) => set("data_elaboracao", v)} placeholder="dd/mm/aaaa" />
+            <DatePicker value={c.data_elaboracao ?? ""} onChange={(v) => set("data_elaboracao", v)} />
           </Field>
         </div>
       </Section>
