@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, Fragment } from "react";
 import { saveDocument, getAulasCurriculo, getSkillsByCodigos } from "@/lib/actions";
 import { toast } from "sonner";
-import { Loader2, Upload, Download } from "lucide-react";
+import { Loader2, Upload, Download, Check, ChevronDown } from "lucide-react";
 
 interface DocData {
   id: number;
@@ -269,6 +269,144 @@ const BIMESTRES_OPTS = [
   { value: "4", label: "4º Bimestre" },
 ];
 
+const PERIODO_OPTS = [
+  { value: "por_aula",   label: "Por aula",    desc: "Uma aula específica do currículo" },
+  { value: "semanal",    label: "Semanal",     desc: "Plano para as aulas da semana" },
+  { value: "quinzenal",  label: "Quinzenal",   desc: "Plano para duas semanas" },
+  { value: "bimestral",  label: "Bimestral",   desc: "Plano para o bimestre completo" },
+];
+
+// ─── Step indicator ───────────────────────────────────────────────────────────
+
+function StepIndicator({ step, total }: { step: number; total: number }) {
+  const labels = ["Período", "Aulas", "Formulário"];
+  return (
+    <div className="flex items-center gap-2 mb-6">
+      {Array.from({ length: total }).map((_, i) => {
+        const n = i + 1;
+        const done = n < step;
+        const active = n === step;
+        return (
+          <Fragment key={n}>
+            <div className="flex items-center gap-2">
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
+                done   ? "bg-primary border-primary text-primary-foreground" :
+                active ? "bg-primary/10 border-primary text-primary" :
+                         "bg-background border-border/40 text-muted-foreground"
+              }`}>
+                {done ? <Check size={13} /> : n}
+              </div>
+              <span className={`text-xs font-bold ${active ? "text-foreground" : "text-muted-foreground"}`}>
+                {labels[i]}
+              </span>
+            </div>
+            {i < total - 1 && <div className="flex-1 h-px bg-border/40" />}
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── AulaCard ────────────────────────────────────────────────────────────────
+
+function AulaCard({
+  aula,
+  selected,
+  multiSelect,
+  onToggle,
+}: {
+  aula: AulaRecord;
+  selected: boolean;
+  multiSelect: boolean;
+  onToggle: (id: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const habs = parseBulletList(aula.habilidadeTexto).concat(parseCodeList(aula.habilidadeCodigo));
+  const cont = parseBulletList(aula.conteudo);
+
+  return (
+    <div className={`border rounded-xl transition-all ${
+      selected ? "border-primary bg-primary/5" : "border-border/50 bg-background"
+    }`}>
+      <div className="flex items-start gap-3 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => onToggle(aula.id)}
+          className={`mt-0.5 shrink-0 w-5 h-5 ${multiSelect ? "rounded" : "rounded-full"} border-2 flex items-center justify-center transition-all ${
+            selected ? "bg-primary border-primary" : "border-border/60 hover:border-primary/60"
+          }`}
+        >
+          {selected && <Check size={11} className="text-primary-foreground" />}
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 cursor-pointer" onClick={() => onToggle(aula.id)}>
+              <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">
+                Aula {aula.aulaNum}
+              </span>
+              <p className="text-sm font-bold text-foreground mt-0.5">{aula.titulo}</p>
+              {aula.unidadeTematica && !expanded && (
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">{aula.unidadeTematica}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shrink-0"
+            >
+              <ChevronDown size={16} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="px-4 pb-4 pt-3 space-y-3 border-t border-border/30 ml-8">
+          {aula.unidadeTematica && (
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Unidade Temática</p>
+              <p className="text-xs text-foreground">{aula.unidadeTematica}</p>
+            </div>
+          )}
+          {habs.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Habilidades BNCC</p>
+              <div className="space-y-1">
+                {habs.slice(0, 5).map((h, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                    <span className="text-xs text-foreground leading-relaxed">{h}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {cont.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Conteúdo</p>
+              <div className="space-y-1">
+                {cont.slice(0, 5).map((ct, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                    <span className="text-xs text-foreground leading-relaxed">{ct}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {aula.objetivos && (
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Objetivos</p>
+              <p className="text-xs text-foreground line-clamp-3">{aula.objetivos}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlanoDeAulaForm({
   c,
   set,
@@ -280,12 +418,15 @@ function PlanoDeAulaForm({
   classes: Props["classes"];
   disciplines: Props["disciplines"];
 }) {
+  const [step, setStep] = useState(1);
   const [aulas, setAulas] = useState<AulaRecord[]>([]);
   const [loadingAulas, setLoadingAulas] = useState(false);
-  const [aulaId, setAulaId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [habilidadeOpcoes, setHabilidadeOpcoes] = useState<string[]>([]);
   const [conteudoOpcoes, setConteudoOpcoes] = useState<string[]>([]);
 
+  const periodo = c.periodo ?? "por_aula";
+  const multiSelect = periodo !== "por_aula";
   const selectedClass = classes.find((cl) => cl.name === c.turma);
 
   async function loadAulas(turmaName: string, disciplina: string, bimStr: string) {
@@ -302,120 +443,249 @@ function PlanoDeAulaForm({
     }
   }
 
-  function pickAula(id: number) {
-    const a = aulas.find((x) => x.id === id);
-    if (!a) return;
-    setAulaId(id);
-    set("aula_id", String(id));
-    set("aula_num", String(a.aulaNum));
-    set("tema", a.titulo);
-    set("eixo", a.eixo ?? "");
-    set("unidade_tematica", a.unidadeTematica ?? "");
-    set("objeto_conhecimento", a.objetoConhecimento ?? "");
-    set("objetivo_geral", a.objetivos ?? "");
-
-    // Busca habilidades completas na tabela samba_edvance.skills pelos códigos
-    const codigos = parseCodeList(a.habilidadeCodigo);
-    const textos = parseBulletList(a.habilidadeTexto);
-    const fallback = codigos.length > 0 ? codigos : textos;
-    setHabilidadeOpcoes(fallback);
-    set("habilidades", fallback.join("\n"));
-    if (codigos.length > 0) {
-      getSkillsByCodigos(codigos).then((skills) => {
-        if (skills.length > 0) {
-          const habOpcoes = skills.map((s) => `(${s.code}) ${s.description}`);
-          setHabilidadeOpcoes(habOpcoes);
-          set("habilidades", habOpcoes.join("\n"));
-        }
-      }).catch(() => { /* mantém fallback */ });
+  function toggleAula(id: number) {
+    if (!multiSelect) {
+      setSelectedIds([id]);
+    } else {
+      setSelectedIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      );
     }
-
-    // Parse conteúdo into selectable bullet items
-    const contItems = parseBulletList(a.conteudo);
-    setConteudoOpcoes(contItems);
-    set("conteudo", contItems.join("\n"));
   }
 
-  return (
-    <>
-      <Section title="Identificação">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Turma">
-            <SelectInput
-              name="turma"
-              value={c.turma ?? ""}
-              onChange={(v) => {
-                set("turma", v);
-                loadAulas(v, c.disciplina ?? "", c.bimestre ?? "");
-              }}
-              options={classes.map((cl) => ({ value: cl.name, label: cl.name }))}
-              placeholder="Selecione a turma"
-            />
-          </Field>
-          <Field label="Disciplina">
-            <SelectInput
-              name="disciplina"
-              value={c.disciplina ?? ""}
-              onChange={(v) => {
-                set("disciplina", v);
-                loadAulas(c.turma ?? "", v, c.bimestre ?? "");
-              }}
-              options={disciplines.map((d) => ({ value: d.name, label: d.name }))}
-              placeholder="Selecione a disciplina"
-            />
-          </Field>
-          <Field label="Bimestre">
-            <SelectInput
-              name="bimestre"
-              value={c.bimestre ?? ""}
-              onChange={(v) => {
-                set("bimestre", v);
-                loadAulas(c.turma ?? "", c.disciplina ?? "", v);
-              }}
-              options={BIMESTRES_OPTS}
-              placeholder="Selecione o bimestre"
-            />
-          </Field>
-          <Field label="Data">
-            <TextInput name="data" value={c.data ?? ""} onChange={(v) => set("data", v)} placeholder="dd/mm/aaaa" />
-          </Field>
+  async function applyAulas() {
+    const selected = aulas.filter((a) => selectedIds.includes(a.id));
+    if (selected.length === 0) return;
+
+    if (!multiSelect) {
+      const a = selected[0];
+      set("aula_id", String(a.id));
+      set("aula_num", String(a.aulaNum));
+      set("tema", a.titulo);
+      set("eixo", a.eixo ?? "");
+      set("unidade_tematica", a.unidadeTematica ?? "");
+      set("objeto_conhecimento", a.objetoConhecimento ?? "");
+      set("objetivo_geral", a.objetivos ?? "");
+
+      const codigos = parseCodeList(a.habilidadeCodigo);
+      const textos = parseBulletList(a.habilidadeTexto);
+      const fallback = codigos.length > 0 ? codigos : textos;
+      setHabilidadeOpcoes(fallback);
+      set("habilidades", fallback.join("\n"));
+      if (codigos.length > 0) {
+        getSkillsByCodigos(codigos).then((skills) => {
+          if (skills.length > 0) {
+            const habOpcoes = skills.map((s) => `(${s.code}) ${s.description}`);
+            setHabilidadeOpcoes(habOpcoes);
+            set("habilidades", habOpcoes.join("\n"));
+          }
+        }).catch(() => {});
+      }
+      const contItems = parseBulletList(a.conteudo);
+      setConteudoOpcoes(contItems);
+      set("conteudo", contItems.join("\n"));
+    } else {
+      set("aula_ids", selectedIds.join(","));
+      set("aula_nums", selected.map((a) => String(a.aulaNum)).join(", "));
+      set("tema", selected.map((a) => a.titulo).join(" | "));
+
+      const allCodigos = [...new Set(selected.flatMap((a) => parseCodeList(a.habilidadeCodigo)))];
+      const allTextos  = [...new Set(selected.flatMap((a) => parseBulletList(a.habilidadeTexto)))];
+      const fallback = allCodigos.length > 0 ? allCodigos : allTextos;
+      setHabilidadeOpcoes(fallback);
+      set("habilidades", fallback.join("\n"));
+      if (allCodigos.length > 0) {
+        getSkillsByCodigos(allCodigos).then((skills) => {
+          if (skills.length > 0) {
+            const habOpcoes = skills.map((s) => `(${s.code}) ${s.description}`);
+            setHabilidadeOpcoes(habOpcoes);
+            set("habilidades", habOpcoes.join("\n"));
+          }
+        }).catch(() => {});
+      }
+      const allCont = [...new Set(selected.flatMap((a) => parseBulletList(a.conteudo)))];
+      setConteudoOpcoes(allCont);
+      set("conteudo", allCont.join("\n"));
+      const allObj = [...new Set(selected.flatMap((a) => parseBulletList(a.objetivos)))];
+      if (allObj.length > 0) set("objetivo_geral", allObj.join("\n"));
+    }
+
+    setStep(3);
+  }
+
+  // ── Step 1: Período + Identificação ──────────────────────────────────────────
+  if (step === 1) {
+    return (
+      <>
+        <StepIndicator step={1} total={3} />
+        <Section title="Tipo de plano">
+          <div className="grid grid-cols-2 gap-3">
+            {PERIODO_OPTS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => set("periodo", opt.value)}
+                className={`text-left px-4 py-3 rounded-xl border-2 transition-all ${
+                  periodo === opt.value
+                    ? "border-primary bg-primary/5"
+                    : "border-border/40 bg-background hover:border-primary/40"
+                }`}
+              >
+                <p className="font-bold text-sm text-foreground">{opt.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Identificação">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Turma">
+              <SelectInput
+                name="turma"
+                value={c.turma ?? ""}
+                onChange={(v) => { set("turma", v); loadAulas(v, c.disciplina ?? "", c.bimestre ?? ""); }}
+                options={classes.map((cl) => ({ value: cl.name, label: cl.name }))}
+                placeholder="Selecione a turma"
+              />
+            </Field>
+            <Field label="Disciplina">
+              <SelectInput
+                name="disciplina"
+                value={c.disciplina ?? ""}
+                onChange={(v) => { set("disciplina", v); loadAulas(c.turma ?? "", v, c.bimestre ?? ""); }}
+                options={disciplines.map((d) => ({ value: d.name, label: d.name }))}
+                placeholder="Selecione a disciplina"
+              />
+            </Field>
+            <Field label="Bimestre">
+              <SelectInput
+                name="bimestre"
+                value={c.bimestre ?? ""}
+                onChange={(v) => { set("bimestre", v); loadAulas(c.turma ?? "", c.disciplina ?? "", v); }}
+                options={BIMESTRES_OPTS}
+                placeholder="Selecione o bimestre"
+              />
+            </Field>
+            <Field label="Data">
+              <TextInput name="data" value={c.data ?? ""} onChange={(v) => set("data", v)} placeholder="dd/mm/aaaa" />
+            </Field>
+          </div>
+        </Section>
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="button"
+            disabled={!c.turma || !c.disciplina || !c.bimestre}
+            onClick={() => setStep(2)}
+            className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 hover:bg-primary/90 transition-colors"
+          >
+            Próximo →
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  // ── Step 2: Seleção de aulas ──────────────────────────────────────────────────
+  if (step === 2) {
+    return (
+      <>
+        <StepIndicator step={2} total={3} />
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm font-bold text-foreground">
+              {selectedClass ? `${selectedClass.grade} · ${c.disciplina}` : c.disciplina}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {BIMESTRES_OPTS.find((b) => b.value === c.bimestre)?.label}
+              {" · "}
+              {PERIODO_OPTS.find((p) => p.value === periodo)?.label}
+              {multiSelect && " — selecione múltiplas aulas"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Alterar
+          </button>
         </div>
 
-        {/* Aula selector — only shows when curriculum loaded */}
-        {(loadingAulas || aulas.length > 0) && (
-          <Field label="Selecione a aula do currículo" hint={selectedClass ? `${selectedClass.ciclo === 'fundamental' ? 'Anos Finais' : 'Ensino Médio'} — ${selectedClass.grade}` : undefined}>
-            {loadingAulas ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
-                <Loader2 size={16} className="animate-spin" />
-                Carregando aulas...
-              </div>
-            ) : (
-              <div className="grid gap-2 max-h-72 overflow-y-auto pr-1">
-                {aulas.map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    onClick={() => pickAula(a.id)}
-                    className={`text-left border rounded-xl px-4 py-3 transition-all hover:border-primary/60 ${
-                      aulaId === a.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border/50 bg-background"
-                    }`}
-                  >
-                    <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">
-                      Aula {a.aulaNum}
-                    </span>
-                    <p className="text-sm font-bold text-foreground mt-0.5">{a.titulo}</p>
-                    {a.unidadeTematica && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{a.unidadeTematica}</p>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </Field>
+        {loadingAulas ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+            <Loader2 size={16} className="animate-spin" />
+            Carregando aulas...
+          </div>
+        ) : aulas.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            Nenhuma aula encontrada para essa seleção.
+          </p>
+        ) : (
+          <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+            {aulas.map((a) => (
+              <AulaCard
+                key={a.id}
+                aula={a}
+                selected={selectedIds.includes(a.id)}
+                multiSelect={multiSelect}
+                onToggle={toggleAula}
+              />
+            ))}
+          </div>
         )}
 
+        <div className="flex items-center justify-between pt-4">
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border/40 hover:border-border transition-colors"
+          >
+            ← Voltar
+          </button>
+          <button
+            type="button"
+            disabled={selectedIds.length === 0}
+            onClick={applyAulas}
+            className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 hover:bg-primary/90 transition-colors"
+          >
+            Preencher formulário →
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  // ── Step 3: Formulário ────────────────────────────────────────────────────────
+  const selectedAulas = aulas.filter((a) => selectedIds.includes(a.id));
+  return (
+    <>
+      <StepIndicator step={3} total={3} />
+
+      {selectedAulas.length > 0 && (
+        <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 mb-2 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-primary uppercase tracking-wider mb-1">
+              {selectedAulas.length === 1
+                ? `Aula ${selectedAulas[0].aulaNum}`
+                : `${selectedAulas.length} aulas selecionadas`}
+            </p>
+            {selectedAulas.map((a) => (
+              <p key={a.id} className="text-xs text-foreground">{a.aulaNum}. {a.titulo}</p>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="text-xs text-primary hover:text-primary/80 font-bold shrink-0 transition-colors"
+          >
+            Alterar
+          </button>
+        </div>
+      )}
+
+      <Section title="Identificação">
         <Field label="Tema / Título da aula">
           <TextInput name="tema" value={c.tema ?? ""} onChange={(v) => set("tema", v)} placeholder="Ex: Funções do 1º Grau" />
         </Field>
@@ -441,7 +711,7 @@ function PlanoDeAulaForm({
           ) : (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-xl px-4 py-3 border border-border/40">
               <span className="w-2 h-2 rounded-full bg-muted-foreground/40 shrink-0" />
-              Selecione a turma, disciplina, bimestre e uma aula para preencher automaticamente
+              Preenchido automaticamente ao selecionar a aula
             </div>
           )}
         </Field>
