@@ -304,12 +304,12 @@ function TecnicaBadge({
         {item.nome}
       </button>
       {/* Tooltip */}
-      <div className="absolute bottom-full left-0 mb-2 hidden group-hover/tb:block z-50 pointer-events-none w-64">
-        <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl text-xs">
+      <div className="absolute bottom-full left-0 mb-2 hidden group-hover/tb:flex flex-col z-[100] pointer-events-none w-64">
+        <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-2xl text-xs drop-shadow-xl">
           <p className="font-bold text-foreground mb-0.5">{item.nome}</p>
           <p className="text-muted-foreground leading-relaxed">{item.descritor}</p>
         </div>
-        <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 ml-3 -mt-1.5 relative z-[-1]" />
+        <div className="w-2 h-2 bg-card border-r border-b border-border rotate-45 ml-3 -mt-1.5 shrink-0" />
       </div>
     </div>
   );
@@ -382,10 +382,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const DAY_HEADERS = ["D","S","T","Q","Q","S","S"];
 
+function todayStr() {
+  const t = new Date();
+  return `${String(t.getDate()).padStart(2,"0")}/${String(t.getMonth()+1).padStart(2,"0")}/${t.getFullYear()}`;
+}
+
 function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
+  const effectiveValue = value || todayStr();
   const [nav, setNav] = useState(() => {
-    const p = value.split("/");
+    const p = effectiveValue.split("/");
     return p.length === 3 && !isNaN(+p[2]) ? new Date(+p[2], +p[1] - 1, 1) : new Date();
   });
 
@@ -400,7 +406,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
   }
 
   function isSelected(day: number) {
-    const p = value.split("/");
+    const p = effectiveValue.split("/");
     return (
       p.length === 3 &&
       +p[0] === day &&
@@ -414,7 +420,7 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
       <div className="flex gap-2">
         <input
           type="text"
-          value={value}
+          value={effectiveValue}
           onChange={(e) => onChange(e.target.value)}
           placeholder="dd/mm/aaaa"
           className={`${inputCls} flex-1`}
@@ -565,14 +571,14 @@ function AulaBadge({
         Aula {aula.aulaNum}
       </button>
       {/* Tooltip on hover */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/badge:block z-50 pointer-events-none w-56">
-        <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl text-xs">
+      <div className="absolute bottom-full left-0 mb-2 hidden group-hover/badge:flex flex-col z-[100] pointer-events-none w-56">
+        <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-2xl text-xs drop-shadow-xl">
           <p className="font-bold text-foreground">{aula.titulo}</p>
           {aula.unidadeTematica && (
             <p className="text-muted-foreground mt-0.5 line-clamp-2">{aula.unidadeTematica}</p>
           )}
         </div>
-        <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 mx-auto -mt-1.5 relative z-[-1]" />
+        <div className="w-2 h-2 bg-card border-r border-b border-border rotate-45 ml-4 -mt-1.5 shrink-0" />
       </div>
     </div>
   );
@@ -841,7 +847,18 @@ function PlanoDeAulaForm({
                 name="disciplina"
                 value={c.disciplina ?? ""}
                 onChange={(v) => { set("disciplina", v); loadAulas(primaryTurma, v, c.bimestre ?? ""); }}
-                options={disciplines.map((d) => ({ value: d.name, label: d.name }))}
+                options={disciplines
+                  .filter((d) => {
+                    if (!selectedClass) return true;
+                    // EM: só base_comum sem "ciências" e sem componentes exclusivos de EF
+                    // EF: exclui disciplinas exclusivas de EM (sem serie de EM no nome)
+                    // Usa disciplineType: "base_comum" e "itinerario" para EM, só "base_comum" para EF
+                    if (selectedClass.ciclo === "medio" && d.type === "base_comum") return true;
+                    if (selectedClass.ciclo === "medio" && d.type === "itinerario") return true;
+                    if (selectedClass.ciclo === "fundamental" && d.type === "base_comum") return true;
+                    return false;
+                  })
+                  .map((d) => ({ value: d.name, label: d.name }))}
                 placeholder="Selecione a disciplina"
               />
             </Field>
@@ -1141,6 +1158,12 @@ function GuiaAprendizagemForm({
   }
 
   const primaryTurma = selectedTurmas[0] ?? "";
+  const primaryClass = classes.find((cl) => cl.name === primaryTurma);
+  const filteredDisciplines = disciplines.filter((d) => {
+    if (!primaryClass) return true;
+    if (primaryClass.ciclo === "medio") return d.type === "base_comum" || d.type === "itinerario";
+    return d.type === "base_comum";
+  });
 
   return (
     <>
