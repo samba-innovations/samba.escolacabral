@@ -3,7 +3,7 @@
 import { useState, useTransition, Fragment } from "react";
 import { saveDocument, getAulasCurriculo, getSkillsByCodigos } from "@/lib/actions";
 import { toast } from "sonner";
-import { Loader2, Upload, Download, Check, ChevronDown } from "lucide-react";
+import { Loader2, Upload, Download, Check, ChevronDown, Calendar } from "lucide-react";
 
 interface DocData {
   id: number;
@@ -276,11 +276,11 @@ const FECHAMENTO_OPTS = [
   { id: 20, nome: "Validação coletiva de conceitos-chave",  descritor: "Confirma, com a turma, os conhecimentos essenciais construídos." },
 ];
 
-// ─── TecnicaCard — genérico para momento inicial, desenvolvimento e fechamento ─
+// ─── TecnicaBadge — badge compacto com tooltip e painel de detalhe ───────────
 
 type TecnicaItem = { id: number; nome: string; descritor: string };
 
-function TecnicaCard({
+function TecnicaBadge({
   item,
   selected,
   onSelect,
@@ -289,42 +289,37 @@ function TecnicaCard({
   selected: boolean;
   onSelect: (id: number) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   return (
-    <div className={`border rounded-xl transition-all ${
-      selected ? "border-primary bg-primary/5" : "border-border/50 bg-background"
-    }`}>
-      <div className="flex items-start gap-3 px-4 py-3">
-        <button
-          type="button"
-          onClick={() => onSelect(item.id)}
-          className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-            selected ? "bg-primary border-primary" : "border-border/60 hover:border-primary/60"
-          }`}
-        >
-          {selected && <Check size={11} className="text-primary-foreground" />}
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 cursor-pointer" onClick={() => onSelect(item.id)}>
-              <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">
-                {item.id.toString().padStart(2, "0")}
-              </span>
-              <p className="text-sm font-bold text-foreground mt-0.5">{item.nome}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setExpanded(!expanded)}
-              className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shrink-0"
-            >
-              <ChevronDown size={16} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
-            </button>
-          </div>
-          {expanded && (
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{item.descritor}</p>
-          )}
+    <div className="relative group/tb">
+      <button
+        type="button"
+        onClick={() => onSelect(item.id)}
+        className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
+          selected
+            ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30"
+            : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"
+        }`}
+      >
+        <span className="text-muted-foreground mr-1 font-black">{item.id.toString().padStart(2, "0")}</span>
+        {item.nome}
+      </button>
+      {/* Tooltip */}
+      <div className="absolute bottom-full left-0 mb-2 hidden group-hover/tb:block z-50 pointer-events-none w-64">
+        <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl text-xs">
+          <p className="font-bold text-foreground mb-0.5">{item.nome}</p>
+          <p className="text-muted-foreground leading-relaxed">{item.descritor}</p>
         </div>
+        <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 ml-3 -mt-1.5 relative z-[-1]" />
       </div>
+    </div>
+  );
+}
+
+function TecnicaDetailPanel({ item }: { item: TecnicaItem }) {
+  return (
+    <div className="mt-2 border border-primary/20 bg-primary/5 rounded-xl px-4 py-3">
+      <p className="text-xs font-black text-primary uppercase tracking-wider mb-1">{item.nome}</p>
+      <p className="text-xs text-foreground leading-relaxed">{item.descritor}</p>
     </div>
   );
 }
@@ -382,6 +377,107 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// ─── Date picker ─────────────────────────────────────────────────────────────
+
+const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DAY_HEADERS = ["D","S","T","Q","Q","S","S"];
+
+function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [nav, setNav] = useState(() => {
+    const p = value.split("/");
+    return p.length === 3 && !isNaN(+p[2]) ? new Date(+p[2], +p[1] - 1, 1) : new Date();
+  });
+
+  const daysInMonth = new Date(nav.getFullYear(), nav.getMonth() + 1, 0).getDate();
+  const firstDow = new Date(nav.getFullYear(), nav.getMonth(), 1).getDay();
+
+  function selectDay(day: number) {
+    const d = String(day).padStart(2, "0");
+    const m = String(nav.getMonth() + 1).padStart(2, "0");
+    onChange(`${d}/${m}/${nav.getFullYear()}`);
+    setOpen(false);
+  }
+
+  function isSelected(day: number) {
+    const p = value.split("/");
+    return (
+      p.length === 3 &&
+      +p[0] === day &&
+      +p[1] === nav.getMonth() + 1 &&
+      +p[2] === nav.getFullYear()
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="dd/mm/aaaa"
+          className={`${inputCls} flex-1`}
+        />
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="px-3 border border-border/50 rounded-xl text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors bg-background"
+        >
+          <Calendar size={15} />
+        </button>
+      </div>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 right-0 bg-card border border-border rounded-2xl p-3 shadow-xl w-64">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              type="button"
+              onClick={() => setNav(new Date(nav.getFullYear(), nav.getMonth() - 1, 1))}
+              className="p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ‹
+            </button>
+            <span className="text-xs font-bold text-foreground">
+              {MONTH_NAMES[nav.getMonth()]} {nav.getFullYear()}
+            </span>
+            <button
+              type="button"
+              onClick={() => setNav(new Date(nav.getFullYear(), nav.getMonth() + 1, 1))}
+              className="p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ›
+            </button>
+          </div>
+          <div className="grid grid-cols-7 text-center mb-1">
+            {DAY_HEADERS.map((d, i) => (
+              <span key={i} className="text-xs text-muted-foreground font-bold py-1">{d}</span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-0.5">
+            {Array.from({ length: firstDow }).map((_, i) => <span key={`e${i}`} />)}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const sel = isSelected(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => selectDay(day)}
+                  className={`text-xs py-1.5 rounded-lg transition-all hover:bg-primary/10 ${
+                    sel ? "bg-primary text-primary-foreground font-bold" : "text-foreground"
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Form fields per document type ───────────────────────────────────────────
 
 const BIMESTRES_OPTS = [
@@ -398,31 +494,42 @@ const PERIODO_OPTS = [
   { value: "bimestral",  label: "Bimestral",   desc: "Plano para o bimestre completo" },
 ];
 
-// ─── Step indicator ───────────────────────────────────────────────────────────
+// ─── Step indicator (navegável) ───────────────────────────────────────────────
 
-function StepIndicator({ step, total }: { step: number; total: number }) {
+function StepIndicator({
+  step,
+  onGoTo,
+}: {
+  step: number;
+  onGoTo: (s: number) => void;
+}) {
   const labels = ["Período", "Aulas", "Formulário"];
   return (
-    <div className="flex items-center gap-2 mb-6">
-      {Array.from({ length: total }).map((_, i) => {
-        const n = i + 1;
+    <div className="flex items-center gap-1">
+      {[1, 2, 3].map((n, i) => {
         const done = n < step;
         const active = n === step;
         return (
           <Fragment key={n}>
-            <div className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
+            <button
+              type="button"
+              onClick={() => done && onGoTo(n)}
+              className={`flex items-center gap-1.5 ${done ? "cursor-pointer" : "cursor-default"}`}
+            >
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
                 done   ? "bg-primary border-primary text-primary-foreground" :
                 active ? "bg-primary/10 border-primary text-primary" :
                          "bg-background border-border/40 text-muted-foreground"
               }`}>
-                {done ? <Check size={13} /> : n}
+                {done ? <Check size={11} /> : n}
               </div>
-              <span className={`text-xs font-bold ${active ? "text-foreground" : "text-muted-foreground"}`}>
+              <span className={`text-xs font-semibold hidden sm:block transition-colors ${
+                active ? "text-foreground" : done ? "text-primary/80 hover:text-primary" : "text-muted-foreground"
+              }`}>
                 {labels[i]}
               </span>
-            </div>
-            {i < total - 1 && <div className="flex-1 h-px bg-border/40" />}
+            </button>
+            {i < 2 && <div className="w-8 h-px bg-border/40 mx-1" />}
           </Fragment>
         );
       })}
@@ -430,9 +537,9 @@ function StepIndicator({ step, total }: { step: number; total: number }) {
   );
 }
 
-// ─── AulaCard ────────────────────────────────────────────────────────────────
+// ─── AulaBadge + AulaDetailPanel ─────────────────────────────────────────────
 
-function AulaCard({
+function AulaBadge({
   aula,
   selected,
   multiSelect,
@@ -443,86 +550,71 @@ function AulaCard({
   multiSelect: boolean;
   onToggle: (id: number) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const habs = parseBulletList(aula.habilidadeTexto).concat(parseCodeList(aula.habilidadeCodigo));
-  const cont = parseBulletList(aula.conteudo);
-
   return (
-    <div className={`border rounded-xl transition-all ${
-      selected ? "border-primary bg-primary/5" : "border-border/50 bg-background"
-    }`}>
-      <div className="flex items-start gap-3 px-4 py-3">
-        <button
-          type="button"
-          onClick={() => onToggle(aula.id)}
-          className={`mt-0.5 shrink-0 w-5 h-5 ${multiSelect ? "rounded" : "rounded-full"} border-2 flex items-center justify-center transition-all ${
-            selected ? "bg-primary border-primary" : "border-border/60 hover:border-primary/60"
-          }`}
-        >
-          {selected && <Check size={11} className="text-primary-foreground" />}
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 cursor-pointer" onClick={() => onToggle(aula.id)}>
-              <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">
-                Aula {aula.aulaNum}
-              </span>
-              <p className="text-sm font-bold text-foreground mt-0.5">{aula.titulo}</p>
-              {aula.unidadeTematica && !expanded && (
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">{aula.unidadeTematica}</p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setExpanded(!expanded)}
-              className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all shrink-0"
-            >
-              <ChevronDown size={16} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
-            </button>
+    <div className="relative group/badge">
+      <button
+        type="button"
+        onClick={() => onToggle(aula.id)}
+        className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all whitespace-nowrap ${
+          selected
+            ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30"
+            : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"
+        } ${multiSelect && selected ? "ring-2 ring-primary/20" : ""}`}
+      >
+        {multiSelect && selected && <span className="mr-1">✓</span>}
+        Aula {aula.aulaNum}
+      </button>
+      {/* Tooltip on hover */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/badge:block z-50 pointer-events-none w-56">
+        <div className="bg-popover border border-border rounded-xl px-3 py-2 shadow-xl text-xs">
+          <p className="font-bold text-foreground">{aula.titulo}</p>
+          {aula.unidadeTematica && (
+            <p className="text-muted-foreground mt-0.5 line-clamp-2">{aula.unidadeTematica}</p>
+          )}
+        </div>
+        <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 mx-auto -mt-1.5 relative z-[-1]" />
+      </div>
+    </div>
+  );
+}
+
+function AulaDetailPanel({ aulas }: { aulas: AulaRecord[] }) {
+  if (aulas.length === 0) return null;
+  const habs = [...new Set(aulas.flatMap((a) =>
+    parseBulletList(a.habilidadeTexto).concat(parseCodeList(a.habilidadeCodigo))
+  ))];
+  const cont = [...new Set(aulas.flatMap((a) => parseBulletList(a.conteudo)))];
+  return (
+    <div className="mt-3 border border-primary/20 bg-primary/5 rounded-xl px-4 py-3 space-y-3">
+      <div className="flex flex-wrap gap-1.5 items-center">
+        <span className="text-xs font-black text-primary uppercase tracking-wider">
+          {aulas.length === 1 ? `Aula ${aulas[0].aulaNum}` : `${aulas.length} aulas`}
+        </span>
+        {aulas.map((a) => (
+          <span key={a.id} className="text-xs text-foreground font-medium">{aulas.length > 1 ? `${a.aulaNum}. ${a.titulo}` : a.titulo}</span>
+        ))}
+      </div>
+      {habs.length > 0 && (
+        <div>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Habilidades BNCC</p>
+          <div className="space-y-1">
+            {habs.slice(0, 6).map((h, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                <span className="text-xs text-foreground leading-relaxed">{h}</span>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-
-      {expanded && (
-        <div className="px-4 pb-4 pt-3 space-y-3 border-t border-border/30 ml-8">
-          {aula.unidadeTematica && (
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Unidade Temática</p>
-              <p className="text-xs text-foreground">{aula.unidadeTematica}</p>
-            </div>
-          )}
-          {habs.length > 0 && (
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Habilidades BNCC</p>
-              <div className="space-y-1">
-                {habs.slice(0, 5).map((h, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
-                    <span className="text-xs text-foreground leading-relaxed">{h}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {cont.length > 0 && (
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Conteúdo</p>
-              <div className="space-y-1">
-                {cont.slice(0, 5).map((ct, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="mt-1 w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
-                    <span className="text-xs text-foreground leading-relaxed">{ct}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {aula.objetivos && (
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Objetivos</p>
-              <p className="text-xs text-foreground line-clamp-3">{aula.objetivos}</p>
-            </div>
-          )}
+      )}
+      {cont.length > 0 && (
+        <div>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Conteúdo</p>
+          <div className="flex flex-wrap gap-1.5">
+            {cont.slice(0, 8).map((ct, i) => (
+              <span key={i} className="text-xs bg-background border border-border/50 rounded-lg px-2 py-1 text-foreground">{ct}</span>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -543,39 +635,90 @@ function PlanoDeAulaForm({
   const [step, setStep] = useState(1);
   const [aulas, setAulas] = useState<AulaRecord[]>([]);
   const [loadingAulas, setLoadingAulas] = useState(false);
+  const [noAulas, setNoAulas] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [habilidadeOpcoes, setHabilidadeOpcoes] = useState<string[]>([]);
   const [conteudoOpcoes, setConteudoOpcoes] = useState<string[]>([]);
   const [momentoId, setMomentoId] = useState<number | null>(null);
   const [desenvolvimentoId, setDesenvolvimentoId] = useState<number | null>(null);
   const [fechamentoId, setFechamentoId] = useState<number | null>(null);
+  const [selectedTurmas, setSelectedTurmas] = useState<string[]>(
+    c.turma ? [c.turma] : []
+  );
 
   const periodo = c.periodo ?? "por_aula";
   const multiSelect = periodo !== "por_aula";
-  const selectedClass = classes.find((cl) => cl.name === c.turma);
+  const primaryTurma = selectedTurmas[0] ?? "";
+  const selectedClass = classes.find((cl) => cl.name === primaryTurma);
+  const nivelLabel = selectedClass
+    ? selectedClass.ciclo === "fundamental" ? "Anos Finais (EF)" : "Ensino Médio"
+    : null;
 
   async function loadAulas(turmaName: string, disciplina: string, bimStr: string) {
     const cl = classes.find((x) => x.name === turmaName);
-    if (!cl || !disciplina || !bimStr) { setAulas([]); return; }
+    if (!cl || !disciplina || !bimStr) { setAulas([]); setNoAulas(false); return; }
     const disc = disciplines.find((d) => d.name === disciplina);
     const disciplinaNome = disc?.aulasNome ?? disciplina;
     setLoadingAulas(true);
+    setNoAulas(false);
     try {
       const rows = await getAulasCurriculo(cl.ciclo, cl.serie, disciplinaNome, Number(bimStr));
       setAulas(rows);
+      if (rows.length === 0) setNoAulas(true);
     } finally {
       setLoadingAulas(false);
     }
   }
 
+  function toggleTurma(name: string) {
+    setSelectedTurmas((prev) => {
+      const next = prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name];
+      set("turma", next[0] ?? "");
+      set("turmas", next.join(", "));
+      if (next[0] !== prev[0]) loadAulas(next[0] ?? "", c.disciplina ?? "", c.bimestre ?? "");
+      return next;
+    });
+  }
+
   function toggleAula(id: number) {
-    if (!multiSelect) {
-      setSelectedIds([id]);
-    } else {
-      setSelectedIds((prev) =>
-        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-      );
-    }
+    setSelectedIds((prev) =>
+      !multiSelect ? [id] : prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  // Barra de navegação sticky — sempre visível
+  function NavBar() {
+    const canNext =
+      step === 1 ? primaryTurma !== "" && !!c.disciplina && !!c.bimestre
+      : step === 2 ? selectedIds.length > 0
+      : false;
+
+    return (
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-2.5 bg-card/95 backdrop-blur-sm border-b border-border/20 flex items-center gap-3 mb-5">
+        <StepIndicator step={step} onGoTo={(s) => s < step && setStep(s)} />
+        <div className="flex gap-2 ml-auto shrink-0">
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+            >
+              ← Voltar
+            </button>
+          )}
+          {step < 3 && (
+            <button
+              type="button"
+              disabled={!canNext}
+              onClick={() => { if (step === 1) setStep(2); else applyAulas(); }}
+              className="px-4 py-1.5 text-xs font-bold rounded-lg bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors"
+            >
+              {step === 1 ? "Ver aulas →" : "Usar seleção →"}
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   async function applyAulas() {
@@ -641,8 +784,8 @@ function PlanoDeAulaForm({
   // ── Step 1: Período + Identificação ──────────────────────────────────────────
   if (step === 1) {
     return (
-      <>
-        <StepIndicator step={1} total={3} />
+      <div className="space-y-5">
+        <NavBar />
         <Section title="Tipo de plano">
           <div className="grid grid-cols-2 gap-3">
             {PERIODO_OPTS.map((opt) => (
@@ -663,22 +806,41 @@ function PlanoDeAulaForm({
           </div>
         </Section>
 
-        <Section title="Identificação">
+        <Section title="Turma(s)">
+          <p className="text-xs text-muted-foreground -mt-2 mb-2">
+            Selecione uma ou mais turmas (mesmo plano para 1ªA, 1ªB, 1ªC…)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {classes.map((cl) => {
+              const sel = selectedTurmas.includes(cl.name);
+              return (
+                <button
+                  key={cl.id}
+                  type="button"
+                  onClick={() => toggleTurma(cl.name)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${
+                    sel
+                      ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30"
+                      : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"
+                  }`}
+                >
+                  {cl.name}
+                </button>
+              );
+            })}
+          </div>
+          {nivelLabel && (
+            <p className="text-xs text-primary font-semibold mt-2">{nivelLabel}</p>
+          )}
+        </Section>
+
+        <Section title="Disciplina, Bimestre e Data">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Turma">
-              <SelectInput
-                name="turma"
-                value={c.turma ?? ""}
-                onChange={(v) => { set("turma", v); loadAulas(v, c.disciplina ?? "", c.bimestre ?? ""); }}
-                options={classes.map((cl) => ({ value: cl.name, label: cl.name }))}
-                placeholder="Selecione a turma"
-              />
-            </Field>
             <Field label="Disciplina">
               <SelectInput
                 name="disciplina"
                 value={c.disciplina ?? ""}
-                onChange={(v) => { set("disciplina", v); loadAulas(c.turma ?? "", v, c.bimestre ?? ""); }}
+                onChange={(v) => { set("disciplina", v); loadAulas(primaryTurma, v, c.bimestre ?? ""); }}
                 options={disciplines.map((d) => ({ value: d.name, label: d.name }))}
                 placeholder="Selecione a disciplina"
               />
@@ -687,124 +849,90 @@ function PlanoDeAulaForm({
               <SelectInput
                 name="bimestre"
                 value={c.bimestre ?? ""}
-                onChange={(v) => { set("bimestre", v); loadAulas(c.turma ?? "", c.disciplina ?? "", v); }}
+                onChange={(v) => { set("bimestre", v); loadAulas(primaryTurma, c.disciplina ?? "", v); }}
                 options={BIMESTRES_OPTS}
                 placeholder="Selecione o bimestre"
               />
             </Field>
-            <Field label="Data">
-              <TextInput name="data" value={c.data ?? ""} onChange={(v) => set("data", v)} placeholder="dd/mm/aaaa" />
+            <Field label="Data" hint="Digite ou clique no calendário">
+              <DatePicker value={c.data ?? ""} onChange={(v) => set("data", v)} />
             </Field>
           </div>
         </Section>
-
-        <div className="flex justify-end pt-2">
-          <button
-            type="button"
-            disabled={!c.turma || !c.disciplina || !c.bimestre}
-            onClick={() => setStep(2)}
-            className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 hover:bg-primary/90 transition-colors"
-          >
-            Próximo →
-          </button>
-        </div>
-      </>
+      </div>
     );
   }
 
   // ── Step 2: Seleção de aulas ──────────────────────────────────────────────────
   if (step === 2) {
+    const selectedAulaObjs = aulas.filter((a) => selectedIds.includes(a.id));
     return (
-      <>
-        <StepIndicator step={2} total={3} />
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-sm font-bold text-foreground">
-              {selectedClass ? `${selectedClass.grade} · ${c.disciplina}` : c.disciplina}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {BIMESTRES_OPTS.find((b) => b.value === c.bimestre)?.label}
-              {" · "}
-              {PERIODO_OPTS.find((p) => p.value === periodo)?.label}
-              {multiSelect && " — selecione múltiplas aulas"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setStep(1)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← Alterar
-          </button>
+      <div className="space-y-5">
+        <NavBar />
+
+        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+          <span className="font-bold text-foreground">{c.disciplina}</span>
+          <span>·</span>
+          <span>{BIMESTRES_OPTS.find((b) => b.value === c.bimestre)?.label}</span>
+          <span>·</span>
+          <span>{PERIODO_OPTS.find((p) => p.value === periodo)?.label}</span>
+          {nivelLabel && <><span>·</span><span className="text-primary font-semibold">{nivelLabel}</span></>}
+          {multiSelect && <span className="text-muted-foreground italic">— selecione múltiplas aulas</span>}
         </div>
 
         {loadingAulas ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
             <Loader2 size={16} className="animate-spin" />
-            Carregando aulas...
+            Carregando aulas…
           </div>
-        ) : aulas.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-8 text-center">
-            Nenhuma aula encontrada para essa seleção.
-          </p>
+        ) : noAulas ? (
+          <div className="border border-destructive/30 bg-destructive/5 rounded-xl px-4 py-4 text-center space-y-2">
+            <p className="text-sm font-bold text-destructive">Nenhuma aula encontrada</p>
+            <p className="text-xs text-muted-foreground">
+              Verifique a combinação de turma, disciplina e bimestre. Volte ao passo anterior para ajustar.
+            </p>
+          </div>
         ) : (
-          <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
-            {aulas.map((a) => (
-              <AulaCard
-                key={a.id}
-                aula={a}
-                selected={selectedIds.includes(a.id)}
-                multiSelect={multiSelect}
-                onToggle={toggleAula}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-wrap gap-2">
+              {aulas.map((a) => (
+                <AulaBadge
+                  key={a.id}
+                  aula={a}
+                  selected={selectedIds.includes(a.id)}
+                  multiSelect={multiSelect}
+                  onToggle={toggleAula}
+                />
+              ))}
+            </div>
+            <AulaDetailPanel aulas={selectedAulaObjs} />
+          </>
         )}
-
-        <div className="flex items-center justify-between pt-4">
-          <button
-            type="button"
-            onClick={() => setStep(1)}
-            className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border/40 hover:border-border transition-colors"
-          >
-            ← Voltar
-          </button>
-          <button
-            type="button"
-            disabled={selectedIds.length === 0}
-            onClick={applyAulas}
-            className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 hover:bg-primary/90 transition-colors"
-          >
-            Preencher formulário →
-          </button>
-        </div>
-      </>
+      </div>
     );
   }
 
   // ── Step 3: Formulário ────────────────────────────────────────────────────────
   const selectedAulas = aulas.filter((a) => selectedIds.includes(a.id));
   return (
-    <>
-      <StepIndicator step={3} total={3} />
+    <div className="space-y-5">
+      <NavBar />
 
       {selectedAulas.length > 0 && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 mb-2 flex items-start justify-between gap-3">
+        <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black text-primary uppercase tracking-wider mb-1">
-              {selectedAulas.length === 1
-                ? `Aula ${selectedAulas[0].aulaNum}`
-                : `${selectedAulas.length} aulas selecionadas`}
+              {selectedAulas.length === 1 ? `Aula ${selectedAulas[0].aulaNum}` : `${selectedAulas.length} aulas`}
+              {selectedTurmas.length > 1 && ` · ${selectedTurmas.length} turmas`}
             </p>
             {selectedAulas.map((a) => (
               <p key={a.id} className="text-xs text-foreground">{a.aulaNum}. {a.titulo}</p>
             ))}
+            {selectedTurmas.length > 1 && (
+              <p className="text-xs text-muted-foreground mt-1">{selectedTurmas.join(", ")}</p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setStep(2)}
-            className="text-xs text-primary hover:text-primary/80 font-bold shrink-0 transition-colors"
-          >
+          <button type="button" onClick={() => setStep(2)} className="text-xs text-primary hover:text-primary/80 font-bold shrink-0 transition-colors">
             Alterar
           </button>
         </div>
@@ -862,10 +990,10 @@ function PlanoDeAulaForm({
             <TextArea name="conteudo" value={c.conteudo ?? ""} onChange={(v) => set("conteudo", v)} placeholder="Conteúdos a serem trabalhados..." rows={4} />
           )}
         </Field>
-        <Field label="Momento inicial (Motivação / Diagnóstico)" hint="Aproximadamente 10–15 min — selecione uma técnica">
-          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+        <Field label="Momento inicial" hint="10–15 min — passe o mouse para ver detalhes, clique para selecionar">
+          <div className="flex flex-wrap gap-2">
             {MOMENTOS_INICIAIS.map((m) => (
-              <TecnicaCard
+              <TecnicaBadge
                 key={m.id}
                 item={m}
                 selected={momentoId === m.id}
@@ -878,19 +1006,22 @@ function PlanoDeAulaForm({
             ))}
           </div>
           {momentoId !== null && (
-            <TextArea
-              name="desenvolvimento_inicial"
-              value={c.desenvolvimento_inicial ?? ""}
-              onChange={(v) => set("desenvolvimento_inicial", v)}
-              placeholder="Descreva como aplicará esta técnica nesta aula..."
-              rows={3}
-            />
+            <>
+              <TecnicaDetailPanel item={MOMENTOS_INICIAIS.find((x) => x.id === momentoId)!} />
+              <TextArea
+                name="desenvolvimento_inicial"
+                value={c.desenvolvimento_inicial ?? ""}
+                onChange={(v) => set("desenvolvimento_inicial", v)}
+                placeholder="Descreva como aplicará esta técnica nesta aula…"
+                rows={3}
+              />
+            </>
           )}
         </Field>
-        <Field label="Desenvolvimento" hint="Atividade principal — Aproximadamente 25–30 min — selecione uma técnica">
-          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+        <Field label="Desenvolvimento" hint="25–30 min — atividade principal">
+          <div className="flex flex-wrap gap-2">
             {DESENVOLVIMENTO_OPTS.map((m) => (
-              <TecnicaCard
+              <TecnicaBadge
                 key={m.id}
                 item={m}
                 selected={desenvolvimentoId === m.id}
@@ -903,19 +1034,22 @@ function PlanoDeAulaForm({
             ))}
           </div>
           {desenvolvimentoId !== null && (
-            <TextArea
-              name="desenvolvimento_principal"
-              value={c.desenvolvimento_principal ?? ""}
-              onChange={(v) => set("desenvolvimento_principal", v)}
-              placeholder="Descreva como aplicará esta técnica nesta aula..."
-              rows={4}
-            />
+            <>
+              <TecnicaDetailPanel item={DESENVOLVIMENTO_OPTS.find((x) => x.id === desenvolvimentoId)!} />
+              <TextArea
+                name="desenvolvimento_principal"
+                value={c.desenvolvimento_principal ?? ""}
+                onChange={(v) => set("desenvolvimento_principal", v)}
+                placeholder="Descreva como aplicará esta técnica nesta aula…"
+                rows={4}
+              />
+            </>
           )}
         </Field>
-        <Field label="Fechamento / Sistematização" hint="Aproximadamente 10 min — selecione uma técnica">
-          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+        <Field label="Fechamento / Sistematização" hint="~10 min">
+          <div className="flex flex-wrap gap-2">
             {FECHAMENTO_OPTS.map((m) => (
-              <TecnicaCard
+              <TecnicaBadge
                 key={m.id}
                 item={m}
                 selected={fechamentoId === m.id}
@@ -928,13 +1062,16 @@ function PlanoDeAulaForm({
             ))}
           </div>
           {fechamentoId !== null && (
-            <TextArea
-              name="desenvolvimento_fechamento"
-              value={c.desenvolvimento_fechamento ?? ""}
-              onChange={(v) => set("desenvolvimento_fechamento", v)}
-              placeholder="Descreva como aplicará esta técnica nesta aula..."
-              rows={3}
-            />
+            <>
+              <TecnicaDetailPanel item={FECHAMENTO_OPTS.find((x) => x.id === fechamentoId)!} />
+              <TextArea
+                name="desenvolvimento_fechamento"
+                value={c.desenvolvimento_fechamento ?? ""}
+                onChange={(v) => set("desenvolvimento_fechamento", v)}
+                placeholder="Descreva como aplicará esta técnica nesta aula…"
+                rows={3}
+              />
+            </>
           )}
         </Field>
       </Section>
@@ -955,7 +1092,7 @@ function PlanoDeAulaForm({
           />
         </Field>
       </Section>
-    </>
+    </div>
   );
 }
 
