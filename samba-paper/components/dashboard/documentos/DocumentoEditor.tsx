@@ -1853,7 +1853,7 @@ function PdiForm({
       <Section title="Identificação">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Período de referência">
-            <TextInput name="periodo" value={c.periodo ?? ""} onChange={(v) => set("periodo", v)} placeholder={`Ex: 1º Semestre ${ANO_LETIVO}`} />
+            <TextInput name="periodo" value={c.periodo ?? ""} onChange={(v) => set("periodo", v)} placeholder={`Ex: ${currentSemestre()}`} />
           </Field>
           <Field label="Data de elaboração">
             <DatePicker value={c.data_elaboracao ?? ""} onChange={(v) => set("data_elaboracao", v)} />
