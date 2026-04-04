@@ -15,7 +15,6 @@ export interface PdfInput {
 
 const PRIMARY    = '#7a1e7a'
 const DARK       = '#0f0714'
-const YELLOW     = '#FCE31D'
 const LIGHT_BG   = '#f8f3fb'
 const BORDER     = '#ddc8e8'
 const LABEL_CLR  = '#5a1e6a'
@@ -24,12 +23,13 @@ const MUTED      = '#8a6a9a'
 
 const PAGE_W     = 595.28
 const PAGE_H     = 841.89
-const ML         = 50           // margin left
-const MR         = 50           // margin right
+const ML         = 50
+const MR         = 50
 const CONTENT_W  = PAGE_W - ML - MR
-const GOVT_H     = 80           // government header height
-const APP_H      = 38           // samba-paper dark bar height
-const HEADER_H   = GOVT_H + APP_H  // total header height
+const GOVT_H     = 80
+const APP_H      = 38
+const HEADER_H   = GOVT_H + APP_H
+const BOTTOM_M   = 55
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -41,29 +41,29 @@ function hasImg(name: string): boolean {
   try { fs.accessSync(imgPath(name)); return true } catch { return false }
 }
 
-function tryImg(doc: PDFKit.PDFDocument, name: string, x: number, y: number, opts: object) {
-  if (hasImg(name)) doc.image(imgPath(name), x, y, opts)
+/** Add a new page if less than `neededH` px remain on the current page. */
+function ensureSpace(doc: PDFKit.PDFDocument, neededH: number) {
+  if (doc.y + neededH > PAGE_H - BOTTOM_M) {
+    doc.addPage()
+  }
 }
 
 // ─── Government letterhead header ────────────────────────────────────────────
 
 function govtHeader(doc: PDFKit.PDFDocument) {
-  // White background
   doc.rect(0, 0, PAGE_W, GOVT_H).fill('#ffffff')
-  // Bottom line
   doc.moveTo(ML, GOVT_H - 0.5).lineTo(PAGE_W - MR, GOVT_H - 0.5)
     .strokeColor(BORDER).lineWidth(0.8).stroke()
 
-  const logoW  = 52
-  const eiW    = 54
-  const logoY  = (GOVT_H - logoW * 0.7) / 2
-  const eiY    = (GOVT_H - eiW) / 2
+  const logoW = 52
+  const eiW   = 54
+  const logoY = (GOVT_H - logoW * 0.7) / 2
+  const eiY   = (GOVT_H - eiW) / 2
 
   // SP Educação logo (left)
   if (hasImg('logo_sp.png')) {
     doc.image(imgPath('logo_sp.png'), ML, logoY, { width: logoW })
   } else {
-    // Fallback text
     doc.font('Helvetica-Bold').fontSize(15).fillColor('#cc0000')
     doc.text('SP', ML, 22, { lineBreak: false })
     doc.font('Helvetica-Bold').fontSize(7).fillColor(DARK)
@@ -75,33 +75,24 @@ function govtHeader(doc: PDFKit.PDFDocument) {
   if (hasImg('logo_integral.png')) {
     doc.image(imgPath('logo_integral.png'), eiX, eiY, { width: eiW })
   } else {
-    // Fallback: yellow circular text
     doc.font('Helvetica-Bold').fontSize(6.5).fillColor('#c8860a')
     doc.text('ENSINO\nINTEGRAL', eiX, 30, { width: eiW, align: 'center' })
   }
 
-  // Centered text block
+  // Centered institutional text
   const textX = ML + logoW + 12
   const textW = PAGE_W - textX - eiW - MR - 12
 
   doc.font('Helvetica-Bold').fontSize(7.5).fillColor(DARK)
-  doc.text(
-    'GOVERNO DO ESTADO DE SÃO PAULO – SECRETARIA DE ESTADO DA EDUCAÇÃO',
-    textX, 12, { width: textW, align: 'center', lineBreak: false }
-  )
+  doc.text('GOVERNO DO ESTADO DE SÃO PAULO – SECRETARIA DE ESTADO DA EDUCAÇÃO',
+    textX, 12, { width: textW, align: 'center', lineBreak: false })
   doc.font('Helvetica').fontSize(7).fillColor(DARK)
-  doc.text(
-    'UNIDADE REGIONAL DE ENSINO – REGIÃO BAURU – EE PROF. CHRISTINO CABRAL',
-    textX, 26, { width: textW, align: 'center', lineBreak: false }
-  )
-  doc.text(
-    'Rua Gerson França, 19-165 – Jardim Estoril II – CEP: 17016-000',
-    textX, 39, { width: textW, align: 'center', lineBreak: false }
-  )
-  doc.text(
-    'Telefones: (14) 3223-3855 (WhatsApp); (14) 3227-4664 – E-mail: e625598a@educacao.sp.gov.br',
-    textX, 52, { width: textW, align: 'center', lineBreak: false }
-  )
+  doc.text('UNIDADE REGIONAL DE ENSINO – REGIÃO BAURU – EE PROF. CHRISTINO CABRAL',
+    textX, 26, { width: textW, align: 'center', lineBreak: false })
+  doc.text('Rua Gerson França, 19-165 – Jardim Estoril II – CEP: 17016-000',
+    textX, 39, { width: textW, align: 'center', lineBreak: false })
+  doc.text('Telefones: (14) 3223-3855 (WhatsApp); (14) 3227-4664 – E-mail: e625598a@educacao.sp.gov.br',
+    textX, 52, { width: textW, align: 'center', lineBreak: false })
 }
 
 // ─── samba-paper dark bar ────────────────────────────────────────────────────
@@ -133,22 +124,29 @@ function miniHeader(doc: PDFKit.PDFDocument, docType: string) {
   doc.text(` · ${docType}`, ML + 70, 10, { lineBreak: false })
 }
 
-// ─── Footer ──────────────────────────────────────────────────────────────────
+// ─── Footer (drawn at absolute position — does NOT trigger new page) ──────────
 
 function footer(doc: PDFKit.PDFDocument) {
   const y = PAGE_H - 36
+  // Temporarily remove bottom margin so drawing near page end doesn't add a page
+  const savedBottom = doc.page.margins.bottom
+  doc.page.margins.bottom = 0
+
   doc.moveTo(ML, y).lineTo(PAGE_W - MR, y).strokeColor(BORDER).lineWidth(0.5).stroke()
   const date = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: 'long', day: 'numeric' })
   doc.font('Helvetica').fontSize(7).fillColor(MUTED)
   doc.text(
     `Gerado em ${date}  ·  EE Prof. Christino Cabral  ·  samba paper`,
-    ML, y + 8, { width: CONTENT_W, align: 'center' }
+    ML, y + 8, { width: CONTENT_W, align: 'center', lineBreak: false }
   )
+
+  doc.page.margins.bottom = savedBottom
 }
 
 // ─── Section title ────────────────────────────────────────────────────────────
 
 function sectionTitle(doc: PDFKit.PDFDocument, text: string) {
+  ensureSpace(doc, 70)
   doc.moveDown(0.7)
   const y = doc.y
   doc.rect(ML, y, CONTENT_W, 18).fill(PRIMARY)
@@ -157,13 +155,23 @@ function sectionTitle(doc: PDFKit.PDFDocument, text: string) {
   doc.y = y + 22
 }
 
+// ─── Sub-section label (for habilidades, etc.) ────────────────────────────────
+
+function subLabel(doc: PDFKit.PDFDocument, text: string) {
+  const pad = 6
+  const y0  = doc.y
+  doc.rect(ML, y0, CONTENT_W, 16).fill(LIGHT_BG)
+  doc.rect(ML, y0, CONTENT_W, 16).strokeColor(BORDER).lineWidth(0.3).stroke()
+  doc.font('Helvetica-Bold').fontSize(7.5).fillColor(LABEL_CLR)
+  doc.text(text, ML + pad, y0 + 4, { lineBreak: false })
+  doc.y = y0 + 16
+}
+
 // ─── Info table (grid of label+value cells) ───────────────────────────────────
-// cols: array of { label, value, span } where span = 1 or 2 (out of 2)
 
 type Cell = { label: string; value: string; span?: number }
 
-function infoRow(doc: PDFKit.PDFDocument, cells: Cell[], rowY?: number) {
-  const startY = rowY ?? doc.y
+function infoRow(doc: PDFKit.PDFDocument, cells: Cell[]) {
   const colW   = CONTENT_W / 2
   const pad    = 6
   const labelH = 10
@@ -177,21 +185,20 @@ function infoRow(doc: PDFKit.PDFDocument, cells: Cell[], rowY?: number) {
     const h = doc.heightOfString(cell.value, { width: w }) + labelH + pad * 2
     return Math.max(h, minH)
   })
-  const rowH = Math.max(...heights)
+  const rowH   = Math.max(...heights)
+  ensureSpace(doc, rowH)
+  const startY = doc.y
 
   let x = ML
   cells.forEach((cell) => {
     const w = cell.span === 2 ? CONTENT_W : colW
 
-    // Alternating background
     doc.rect(x, startY, w, rowH).fill(LIGHT_BG)
     doc.rect(x, startY, w, rowH).strokeColor(BORDER).lineWidth(0.4).stroke()
 
-    // Label
     doc.font('Helvetica-Bold').fontSize(7.5).fillColor(LABEL_CLR)
     doc.text(cell.label, x + pad, startY + pad, { width: w - pad * 2, lineBreak: false })
 
-    // Value
     doc.font('Helvetica').fontSize(9.5).fillColor(TEXT_CLR)
     doc.text(cell.value?.trim() || '—', x + pad, startY + pad + labelH, { width: w - pad * 2, lineGap: 1.5 })
 
@@ -208,23 +215,40 @@ function habilidadesTable(doc: PDFKit.PDFDocument, raw: string) {
 
   const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean)
   const rows: { code: string; desc: string }[] = lines.map((line) => {
+    // Format: (EM13CNT204) description
     const m = line.match(/^\(([^)]+)\)\s*(.+)$/)
     if (m) return { code: m[1], desc: m[2] }
-    // plain code or text
+    // Format: EM13CNT204 description  OR  EM13CNT204 (code only)
     const parts = line.split(/\s+/)
-    if (parts.length === 1 || /^[A-Z]{2}\d+/.test(parts[0])) {
-      return { code: parts[0], desc: parts.slice(1).join(' ') || '—' }
+    if (parts.length === 1 || /^[A-Z]{2,4}\d/.test(parts[0])) {
+      return { code: parts[0], desc: parts.slice(1).join(' ') || '' }
     }
-    return { code: '—', desc: line }
+    return { code: '', desc: line }
   })
 
-  const codeW = 90
+  const codeW = 95
   const descW = CONTENT_W - codeW
   const pad   = 6
-  const y0    = doc.y
+
+  // Sub-label bar
+  subLabel(doc, 'Habilidades BNCC / Currículo Paulista')
+
+  // Pre-calculate total table height to avoid mid-table breaks
+  doc.font('Helvetica').fontSize(9)
+  const headerH = 18
+  let totalH = headerH
+  const rowHeights = rows.map((row) => {
+    const descH = row.desc ? doc.heightOfString(row.desc, { width: descW - pad * 2 }) : 0
+    return Math.max(descH + pad * 2, 22)
+  })
+  totalH += rowHeights.reduce((a, b) => a + b, 0)
+
+  // If table doesn't fit, move to new page
+  ensureSpace(doc, Math.min(totalH, 120))
+
+  const y0 = doc.y
 
   // Header row
-  const headerH = 18
   doc.rect(ML, y0, codeW, headerH).fill(PRIMARY)
   doc.rect(ML + codeW, y0, descW, headerH).fill(PRIMARY)
   doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#ffffff')
@@ -234,19 +258,31 @@ function habilidadesTable(doc: PDFKit.PDFDocument, raw: string) {
   let rowY = y0 + headerH
 
   rows.forEach((row, i) => {
-    const bg = i % 2 === 0 ? '#ffffff' : LIGHT_BG
-    doc.font('Helvetica').fontSize(9)
-    const descH = doc.heightOfString(row.desc, { width: descW - pad * 2 })
-    const rowH  = Math.max(descH + pad * 2, 20)
+    const rowH = rowHeights[i]
 
+    // If this row won't fit, add page and redraw header
+    if (rowY + rowH > PAGE_H - BOTTOM_M) {
+      doc.addPage()
+      rowY = doc.y
+      doc.rect(ML, rowY, codeW, headerH).fill(PRIMARY)
+      doc.rect(ML + codeW, rowY, descW, headerH).fill(PRIMARY)
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#ffffff')
+      doc.text('CÓDIGO', ML + pad, rowY + 5, { width: codeW - pad, lineBreak: false })
+      doc.text('DESCRIÇÃO', ML + codeW + pad, rowY + 5, { width: descW - pad, lineBreak: false })
+      rowY += headerH
+    }
+
+    const bg = i % 2 === 0 ? '#ffffff' : LIGHT_BG
     doc.rect(ML, rowY, codeW, rowH).fill(bg).strokeColor(BORDER).lineWidth(0.3).stroke()
     doc.rect(ML + codeW, rowY, descW, rowH).fill(bg).strokeColor(BORDER).lineWidth(0.3).stroke()
 
-    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(PRIMARY)
-    doc.text(row.code, ML + pad, rowY + pad, { width: codeW - pad * 2, lineBreak: false })
+    if (row.code) {
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(PRIMARY)
+      doc.text(row.code, ML + pad, rowY + pad, { width: codeW - pad * 2, lineBreak: false })
+    }
 
     doc.font('Helvetica').fontSize(9).fillColor(TEXT_CLR)
-    doc.text(row.desc, ML + codeW + pad, rowY + pad, { width: descW - pad * 2, lineGap: 1.5 })
+    doc.text(row.desc || '—', ML + codeW + pad, rowY + pad, { width: descW - pad * 2, lineGap: 1.5 })
 
     rowY += rowH
   })
@@ -259,8 +295,13 @@ function habilidadesTable(doc: PDFKit.PDFDocument, raw: string) {
 function textBlock(doc: PDFKit.PDFDocument, label: string, value: string) {
   if (!value?.trim()) return
   const pad = 6
-  const y0  = doc.y
 
+  // Estimate height to avoid orphaned headers
+  doc.font('Helvetica').fontSize(9.5)
+  const bodyH = doc.heightOfString(value.trim(), { width: CONTENT_W - pad * 2 })
+  ensureSpace(doc, Math.min(16 + bodyH + pad * 2 + 4, 80))
+
+  const y0 = doc.y
   doc.rect(ML, y0, CONTENT_W, 16).fill(LIGHT_BG)
   doc.rect(ML, y0, CONTENT_W, 16).strokeColor(BORDER).lineWidth(0.3).stroke()
   doc.font('Helvetica-Bold').fontSize(7.5).fillColor(LABEL_CLR)
@@ -284,9 +325,10 @@ function bulletBlock(doc: PDFKit.PDFDocument, label: string, value: string) {
   const items = value.split(/[,\n]/).map((s) => s.trim()).filter(Boolean)
   if (items.length === 0) return
 
-  const pad  = 6
-  const y0   = doc.y
+  const pad = 6
+  ensureSpace(doc, 16 + items.length * 14 + pad * 2)
 
+  const y0 = doc.y
   doc.rect(ML, y0, CONTENT_W, 16).fill(LIGHT_BG)
   doc.rect(ML, y0, CONTENT_W, 16).strokeColor(BORDER).lineWidth(0.3).stroke()
   doc.font('Helvetica-Bold').fontSize(7.5).fillColor(LABEL_CLR)
@@ -297,6 +339,11 @@ function bulletBlock(doc: PDFKit.PDFDocument, label: string, value: string) {
 
   let itemY = bodyY + pad
   items.forEach((item) => {
+    // Check page space mid-list
+    if (itemY + 14 > PAGE_H - BOTTOM_M) {
+      doc.addPage()
+      itemY = doc.y + pad
+    }
     doc.font('Helvetica').fontSize(9).fillColor(PRIMARY)
     doc.text('•', ML + pad, itemY, { lineBreak: false })
     doc.font('Helvetica').fontSize(9).fillColor(TEXT_CLR)
@@ -312,7 +359,6 @@ function bulletBlock(doc: PDFKit.PDFDocument, label: string, value: string) {
 // ─── Document renderers ───────────────────────────────────────────────────────
 
 function renderPlanoDeAula(doc: PDFKit.PDFDocument, c: Record<string, string>) {
-  // Identification grid
   sectionTitle(doc, 'Identificação')
   infoRow(doc, [
     { label: 'Turma', value: c.turmas || c.turma },
@@ -324,27 +370,19 @@ function renderPlanoDeAula(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   ])
   if (c.tema) infoRow(doc, [{ label: 'Tema / Título da Aula', value: c.tema, span: 2 }])
 
-  // Objetivos e Habilidades
   sectionTitle(doc, 'Objetivos e Habilidades')
   if (c.objetivo_geral) textBlock(doc, 'Objetivo Geral', c.objetivo_geral)
-
   if (c.habilidades?.trim()) {
-    doc.moveDown(0.4)
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(LABEL_CLR)
-    doc.text('Habilidades BNCC / Currículo Paulista', ML, doc.y, { lineBreak: false })
     doc.moveDown(0.3)
     habilidadesTable(doc, c.habilidades)
   }
-
   if (c.objeto_conhecimento) textBlock(doc, 'Objeto de Conhecimento', c.objeto_conhecimento)
 
-  // Desenvolvimento
   sectionTitle(doc, 'Desenvolvimento da Aula')
-  if (c.desenvolvimento_inicial)   textBlock(doc, 'Momento Inicial (10–15 min)', c.desenvolvimento_inicial)
-  if (c.desenvolvimento_principal) textBlock(doc, 'Desenvolvimento (25–30 min)', c.desenvolvimento_principal)
+  if (c.desenvolvimento_inicial)    textBlock(doc, 'Momento Inicial (10–15 min)', c.desenvolvimento_inicial)
+  if (c.desenvolvimento_principal)  textBlock(doc, 'Desenvolvimento (25–30 min)', c.desenvolvimento_principal)
   if (c.desenvolvimento_fechamento) textBlock(doc, 'Fechamento / Sistematização (~10 min)', c.desenvolvimento_fechamento)
 
-  // Recursos e Avaliação
   sectionTitle(doc, 'Recursos e Avaliação')
   if (c.recursos_materiais) bulletBlock(doc, 'Recursos e Materiais', c.recursos_materiais)
   if (c.avaliacao)          bulletBlock(doc, 'Avaliação', c.avaliacao)
@@ -365,18 +403,16 @@ function renderGuiaAprendizagem(doc: PDFKit.PDFDocument, c: Record<string, strin
   sectionTitle(doc, 'Conteúdo Curricular')
   if (c.competencias) textBlock(doc, 'Competências Gerais (BNCC)', c.competencias)
   if (c.habilidades?.trim()) {
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(LABEL_CLR)
-    doc.text('Habilidades Específicas', ML, doc.y, { lineBreak: false })
     doc.moveDown(0.3)
     habilidadesTable(doc, c.habilidades)
   }
   if (c.conteudos) textBlock(doc, 'Conteúdos Programáticos', c.conteudos)
 
   sectionTitle(doc, 'Metodologia e Avaliação')
-  if (c.estrategias)  textBlock(doc, 'Estratégias Didáticas', c.estrategias)
-  if (c.recursos)     bulletBlock(doc, 'Recursos e Materiais', c.recursos)
-  if (c.avaliacao)    bulletBlock(doc, 'Avaliação Bimestral', c.avaliacao)
-  if (c.referencias)  textBlock(doc, 'Referências', c.referencias)
+  if (c.estrategias) textBlock(doc, 'Estratégias Didáticas', c.estrategias)
+  if (c.recursos)    bulletBlock(doc, 'Recursos e Materiais', c.recursos)
+  if (c.avaliacao)   bulletBlock(doc, 'Avaliação Bimestral', c.avaliacao)
+  if (c.referencias) textBlock(doc, 'Referências', c.referencias)
 }
 
 function renderPei(doc: PDFKit.PDFDocument, c: Record<string, string>) {
@@ -392,13 +428,13 @@ function renderPei(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   infoRow(doc, [{ label: 'Data de Elaboração', value: c.data_elaboracao, span: 2 }])
 
   sectionTitle(doc, 'Diagnóstico e Necessidades')
-  if (c.diagnostico)  textBlock(doc, 'Diagnóstico Funcional / CID', c.diagnostico)
-  if (c.areas_apoio)  textBlock(doc, 'Áreas de Apoio Necessárias', c.areas_apoio)
+  if (c.diagnostico) textBlock(doc, 'Diagnóstico Funcional / CID', c.diagnostico)
+  if (c.areas_apoio) textBlock(doc, 'Áreas de Apoio Necessárias', c.areas_apoio)
 
   sectionTitle(doc, 'Plano de Ação')
-  if (c.objetivos)    textBlock(doc, 'Objetivos Específicos', c.objetivos)
-  if (c.estrategias)  textBlock(doc, 'Estratégias e Recursos Pedagógicos', c.estrategias)
-  if (c.avaliacao)    textBlock(doc, 'Avaliação do Processo', c.avaliacao)
+  if (c.objetivos)   textBlock(doc, 'Objetivos Específicos', c.objetivos)
+  if (c.estrategias) textBlock(doc, 'Estratégias e Recursos Pedagógicos', c.estrategias)
+  if (c.avaliacao)   textBlock(doc, 'Avaliação do Processo', c.avaliacao)
 
   sectionTitle(doc, 'Família e Profissionais')
   infoRow(doc, [
@@ -423,9 +459,9 @@ function renderPlanoEletiva(doc: PDFKit.PDFDocument, c: Record<string, string>) 
   if (c.conteudo)      textBlock(doc, 'Conteúdo Programático', c.conteudo)
 
   sectionTitle(doc, 'Metodologia e Avaliação')
-  if (c.metodologia)   textBlock(doc, 'Metodologia', c.metodologia)
-  if (c.avaliacao)     bulletBlock(doc, 'Avaliação', c.avaliacao)
-  if (c.materiais)     bulletBlock(doc, 'Materiais e Recursos', c.materiais)
+  if (c.metodologia) textBlock(doc, 'Metodologia', c.metodologia)
+  if (c.avaliacao)   bulletBlock(doc, 'Avaliação', c.avaliacao)
+  if (c.materiais)   bulletBlock(doc, 'Materiais e Recursos', c.materiais)
 }
 
 function renderPlanoEma(doc: PDFKit.PDFDocument, c: Record<string, string>) {
@@ -458,8 +494,8 @@ function renderProjeto(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   infoRow(doc, [{ label: 'Disciplinas Envolvidas', value: c.disciplinas, span: 2 }])
 
   sectionTitle(doc, 'Proposta')
-  if (c.justificativa)        textBlock(doc, 'Justificativa', c.justificativa)
-  if (c.objetivos_gerais)     textBlock(doc, 'Objetivos Gerais', c.objetivos_gerais)
+  if (c.justificativa)         textBlock(doc, 'Justificativa', c.justificativa)
+  if (c.objetivos_gerais)      textBlock(doc, 'Objetivos Gerais', c.objetivos_gerais)
   if (c.objetivos_especificos) textBlock(doc, 'Objetivos Específicos', c.objetivos_especificos)
 
   sectionTitle(doc, 'Desenvolvimento e Avaliação')
@@ -481,8 +517,8 @@ function renderPdi(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   if (c.desafios)      textBlock(doc, 'Principais Desafios Enfrentados', c.desafios)
 
   sectionTitle(doc, 'Metas e Desenvolvimento')
-  if (c.metas)      textBlock(doc, 'Metas Profissionais para o Próximo Período', c.metas)
-  if (c.formacoes)  textBlock(doc, 'Formações Realizadas / Desejadas', c.formacoes)
+  if (c.metas)       textBlock(doc, 'Metas Profissionais para o Próximo Período', c.metas)
+  if (c.formacoes)   textBlock(doc, 'Formações Realizadas / Desejadas', c.formacoes)
   if (c.estrategias) textBlock(doc, 'Estratégias para Alcançar as Metas', c.estrategias)
   if (c.indicadores) textBlock(doc, 'Indicadores de Sucesso', c.indicadores)
 }
@@ -501,23 +537,26 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function generatePdf(input: PdfInput): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const docType = TYPE_LABELS[input.type] ?? input.type
-    const firstPageTop = HEADER_H + 16  // content starts after headers
+    const docType      = TYPE_LABELS[input.type] ?? input.type
+    const firstPageTop = HEADER_H + 16
 
     const doc = new PDFDocument({
       size: 'A4',
-      margins: { top: firstPageTop, bottom: 55, left: ML, right: MR },
+      margins: { top: firstPageTop, bottom: BOTTOM_M, left: ML, right: MR },
     })
 
     const chunks: Buffer[] = []
-    doc.on('data', (chunk: Buffer) => chunks.push(chunk))
-    doc.on('end',  () => resolve(Buffer.concat(chunks)))
+    doc.on('data',  (chunk: Buffer) => chunks.push(chunk))
+    doc.on('end',   () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
-    // Mini-header for subsequent pages
+    // Track whether we are finishing (to skip miniHeader on footer overflow)
+    let finishing = false
     doc.on('pageAdded', () => {
-      miniHeader(doc, docType)
-      doc.y = 42
+      if (!finishing) {
+        miniHeader(doc, docType)
+        doc.y = 42
+      }
     })
 
     // Page 1 headers
@@ -535,15 +574,17 @@ export function generatePdf(input: PdfInput): Promise<Buffer> {
     // Render content
     const c = input.content
     switch (input.type) {
-      case 'plano_de_aula':        renderPlanoDeAula(doc, c);        break
-      case 'guia_de_aprendizagem': renderGuiaAprendizagem(doc, c);   break
-      case 'pei':                  renderPei(doc, c);                 break
-      case 'plano_de_eletiva':     renderPlanoEletiva(doc, c);        break
-      case 'plano_ema':            renderPlanoEma(doc, c);            break
-      case 'projeto':              renderProjeto(doc, c);             break
-      case 'pdi':                  renderPdi(doc, c);                 break
+      case 'plano_de_aula':        renderPlanoDeAula(doc, c);       break
+      case 'guia_de_aprendizagem': renderGuiaAprendizagem(doc, c);  break
+      case 'pei':                  renderPei(doc, c);               break
+      case 'plano_de_eletiva':     renderPlanoEletiva(doc, c);      break
+      case 'plano_ema':            renderPlanoEma(doc, c);          break
+      case 'projeto':              renderProjeto(doc, c);           break
+      case 'pdi':                  renderPdi(doc, c);               break
     }
 
+    // Footer on last page only (finishing flag prevents new miniHeader)
+    finishing = true
     footer(doc)
     doc.end()
   })
