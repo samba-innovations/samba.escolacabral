@@ -9,6 +9,32 @@ export interface PdfInput {
   title: string
   userName: string
   content: Record<string, string>
+  createdAt?: string   // ISO string — used to auto-fill data field
+}
+
+// ─── Period helpers ───────────────────────────────────────────────────────────
+
+const PERIODO_LABELS: Record<string, string> = {
+  por_aula:  'Por aula',
+  semanal:   'Semanal',
+  quinzenal: 'Quinzenal',
+}
+
+function ptDate(d: Date): string {
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function computeDataRange(periodo: string, createdAt: string): string {
+  const start = new Date(createdAt)
+  if (periodo === 'semanal') {
+    const end = new Date(start); end.setDate(end.getDate() + 6)
+    return `${ptDate(start)} até ${ptDate(end)}`
+  }
+  if (periodo === 'quinzenal') {
+    const end = new Date(start); end.setDate(end.getDate() + 14)
+    return `${ptDate(start)} até ${ptDate(end)}`
+  }
+  return ptDate(start)  // por_aula or unknown
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -97,19 +123,29 @@ function govtHeader(doc: PDFKit.PDFDocument) {
 
 // ─── samba-paper dark bar ────────────────────────────────────────────────────
 
-function appBar(doc: PDFKit.PDFDocument, docType: string, userName: string) {
+function appBar(doc: PDFKit.PDFDocument, docType: string, userName: string, periodoLabel?: string) {
   doc.rect(0, GOVT_H, PAGE_W, APP_H).fill(DARK)
   doc.rect(0, GOVT_H + APP_H, PAGE_W, 2).fill(PRIMARY)
 
+  // "samba paper" label
   doc.font('Helvetica-Bold').fontSize(8).fillColor(PRIMARY)
   doc.text('samba paper', ML, GOVT_H + 8, { lineBreak: false })
 
+  // doc type
   doc.font('Helvetica').fontSize(7).fillColor('#9a6aaa')
   doc.text(docType.toUpperCase(), ML + 80, GOVT_H + 9, { lineBreak: false })
 
+  // period label (optional)
+  if (periodoLabel) {
+    doc.font('Helvetica').fontSize(6.5).fillColor('#7a5a8a')
+    doc.text(`· ${periodoLabel}`, ML + 80 + 72, GOVT_H + 9.5, { lineBreak: false })
+  }
+
+  // userName — fixed box ending at right margin
+  const nameW = 140
   doc.font('Helvetica').fontSize(7).fillColor('#b090c0')
-  doc.text(userName, PAGE_W - MR, GOVT_H + 9, {
-    width: MR + 60, align: 'right', lineBreak: false,
+  doc.text(userName, PAGE_W - MR - nameW, GOVT_H + 9, {
+    width: nameW, align: 'right', lineBreak: false,
   })
 }
 
@@ -358,7 +394,11 @@ function bulletBlock(doc: PDFKit.PDFDocument, label: string, value: string) {
 
 // ─── Document renderers ───────────────────────────────────────────────────────
 
-function renderPlanoDeAula(doc: PDFKit.PDFDocument, c: Record<string, string>) {
+function renderPlanoDeAula(doc: PDFKit.PDFDocument, c: Record<string, string>, createdAt?: string) {
+  // Auto-compute data if blank
+  const dataValue = c.data?.trim()
+    || (createdAt ? computeDataRange(c.periodo ?? 'por_aula', createdAt) : '—')
+
   sectionTitle(doc, 'Identificação')
   infoRow(doc, [
     { label: 'Turma', value: c.turmas || c.turma },
@@ -366,7 +406,7 @@ function renderPlanoDeAula(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   ])
   infoRow(doc, [
     { label: 'Bimestre', value: c.bimestre ? `${c.bimestre}º Bimestre` : c.bimestre },
-    { label: 'Data', value: c.data },
+    { label: 'Data', value: dataValue },
   ])
   if (c.tema) infoRow(doc, [{ label: 'Tema / Título da Aula', value: c.tema, span: 2 }])
 
@@ -538,6 +578,9 @@ const TYPE_LABELS: Record<string, string> = {
 export function generatePdf(input: PdfInput): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const docType      = TYPE_LABELS[input.type] ?? input.type
+    const periodoLabel = input.type === 'plano_de_aula'
+      ? (PERIODO_LABELS[input.content.periodo ?? ''] ?? undefined)
+      : undefined
     const firstPageTop = HEADER_H + 16
 
     const doc = new PDFDocument({
@@ -561,7 +604,7 @@ export function generatePdf(input: PdfInput): Promise<Buffer> {
 
     // Page 1 headers
     govtHeader(doc)
-    appBar(doc, docType, input.userName)
+    appBar(doc, docType, input.userName, periodoLabel)
 
     // Document title
     doc.y = firstPageTop
@@ -574,7 +617,7 @@ export function generatePdf(input: PdfInput): Promise<Buffer> {
     // Render content
     const c = input.content
     switch (input.type) {
-      case 'plano_de_aula':        renderPlanoDeAula(doc, c);       break
+      case 'plano_de_aula':        renderPlanoDeAula(doc, c, input.createdAt);  break
       case 'guia_de_aprendizagem': renderGuiaAprendizagem(doc, c);  break
       case 'pei':                  renderPei(doc, c);               break
       case 'plano_de_eletiva':     renderPlanoEletiva(doc, c);      break

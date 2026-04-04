@@ -92,6 +92,7 @@ export async function POST(
       title: doc.title,
       userName: session.name,
       content,
+      createdAt: doc.createdAt.toISOString(),
     })
 
     await fs.mkdir(path.join(STORAGE_DIR, 'pdfs'), { recursive: true })
