@@ -428,15 +428,16 @@ function renderPlanoDeAula(doc: PDFKit.PDFDocument, c: Record<string, string>, c
   if (c.avaliacao)          bulletBlock(doc, 'Avaliação', c.avaliacao)
 }
 
-function renderGuiaAprendizagem(doc: PDFKit.PDFDocument, c: Record<string, string>) {
+function renderGuiaAprendizagem(doc: PDFKit.PDFDocument, c: Record<string, string>, createdAt?: string) {
+  const dataRef = createdAt ? ptDate(new Date(createdAt)) : '—'
   sectionTitle(doc, 'Identificação')
   infoRow(doc, [
     { label: 'Turma(s)', value: c.turmas || c.turma },
     { label: 'Disciplina', value: c.disciplina },
   ])
   infoRow(doc, [
-    { label: 'Bimestre', value: c.bimestre },
-    { label: 'Ano Letivo', value: c.ano_letivo },
+    { label: 'Bimestre', value: c.bimestre ? `${c.bimestre}º Bimestre` : c.bimestre },
+    { label: 'Ano Letivo', value: c.ano_letivo || dataRef.split('/')[2] },
   ])
   if (c.tema) infoRow(doc, [{ label: 'Tema', value: c.tema, span: 2 }])
 
@@ -455,7 +456,8 @@ function renderGuiaAprendizagem(doc: PDFKit.PDFDocument, c: Record<string, strin
   if (c.referencias) textBlock(doc, 'Referências', c.referencias)
 }
 
-function renderPei(doc: PDFKit.PDFDocument, c: Record<string, string>) {
+function renderPei(doc: PDFKit.PDFDocument, c: Record<string, string>, createdAt?: string) {
+  const dataElab = c.data_elaboracao?.trim() || (createdAt ? ptDate(new Date(createdAt)) : '—')
   sectionTitle(doc, 'Identificação do Aluno')
   infoRow(doc, [
     { label: 'Aluno', value: c.aluno },
@@ -465,7 +467,7 @@ function renderPei(doc: PDFKit.PDFDocument, c: Record<string, string>) {
     { label: 'Turma', value: c.turma },
     { label: 'Bimestre', value: c.bimestre },
   ])
-  infoRow(doc, [{ label: 'Data de Elaboração', value: c.data_elaboracao, span: 2 }])
+  infoRow(doc, [{ label: 'Data de Elaboração', value: dataElab, span: 2 }])
 
   sectionTitle(doc, 'Diagnóstico e Necessidades')
   if (c.diagnostico) textBlock(doc, 'Diagnóstico Funcional / CID', c.diagnostico)
@@ -484,12 +486,15 @@ function renderPei(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   if (c.profissionais) textBlock(doc, 'Profissionais Envolvidos', c.profissionais)
 }
 
-function renderPlanoEletiva(doc: PDFKit.PDFDocument, c: Record<string, string>) {
+function renderPlanoEletiva(doc: PDFKit.PDFDocument, c: Record<string, string>, createdAt?: string) {
+  const semestre = c.semestre?.trim() || (createdAt
+    ? ((new Date(createdAt).getMonth() + 1) <= 6 ? '1º Semestre' : '2º Semestre')
+    : '—')
   sectionTitle(doc, 'Identificação')
   infoRow(doc, [{ label: 'Nome da Eletiva', value: c.nome_eletiva, span: 2 }])
   infoRow(doc, [
     { label: 'Turmas Atendidas', value: c.turmas },
-    { label: 'Semestre', value: c.semestre },
+    { label: 'Semestre', value: semestre },
   ])
   infoRow(doc, [{ label: 'Carga Horária Semanal', value: c.carga_horaria, span: 2 }])
 
@@ -504,11 +509,15 @@ function renderPlanoEletiva(doc: PDFKit.PDFDocument, c: Record<string, string>) 
   if (c.materiais)   bulletBlock(doc, 'Materiais e Recursos', c.materiais)
 }
 
-function renderPlanoEma(doc: PDFKit.PDFDocument, c: Record<string, string>) {
+function renderPlanoEma(doc: PDFKit.PDFDocument, c: Record<string, string>, createdAt?: string) {
+  const bimestre = c.bimestre?.trim() || (createdAt ? (() => {
+    const m = new Date(createdAt).getMonth() + 1
+    return m <= 3 ? '1' : m <= 6 ? '2' : m <= 9 ? '3' : '4'
+  })() : '—')
   sectionTitle(doc, 'Identificação')
   infoRow(doc, [
     { label: 'Modalidade', value: c.modalidade },
-    { label: 'Bimestre', value: c.bimestre },
+    { label: 'Bimestre', value: bimestre ? `${bimestre}º Bimestre` : bimestre },
   ])
   infoRow(doc, [
     { label: 'Turmas Atendidas', value: c.turmas },
@@ -524,12 +533,17 @@ function renderPlanoEma(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   if (c.materiais)   bulletBlock(doc, 'Materiais e Equipamentos', c.materiais)
 }
 
-function renderProjeto(doc: PDFKit.PDFDocument, c: Record<string, string>) {
+function renderProjeto(doc: PDFKit.PDFDocument, c: Record<string, string>, createdAt?: string) {
+  const periodo = c.periodo?.trim() || (createdAt ? (() => {
+    const d = new Date(createdAt)
+    const ano = d.getFullYear()
+    return (d.getMonth() + 1) <= 6 ? `1º Semestre ${ano}` : `2º Semestre ${ano}`
+  })() : '—')
   sectionTitle(doc, 'Identificação do Projeto')
   infoRow(doc, [{ label: 'Título do Projeto', value: c.titulo, span: 2 }])
   infoRow(doc, [
     { label: 'Turmas Participantes', value: c.turmas },
-    { label: 'Período de Realização', value: c.periodo },
+    { label: 'Período de Realização', value: periodo },
   ])
   infoRow(doc, [{ label: 'Disciplinas Envolvidas', value: c.disciplinas, span: 2 }])
 
@@ -545,11 +559,16 @@ function renderProjeto(doc: PDFKit.PDFDocument, c: Record<string, string>) {
   if (c.apresentacao)  textBlock(doc, 'Apresentação / Culminância', c.apresentacao)
 }
 
-function renderPdi(doc: PDFKit.PDFDocument, c: Record<string, string>) {
+function renderPdi(doc: PDFKit.PDFDocument, c: Record<string, string>, createdAt?: string) {
+  const dataElab = c.data_elaboracao?.trim() || (createdAt ? ptDate(new Date(createdAt)) : '—')
+  const periodoRef = c.periodo?.trim() || (createdAt ? (() => {
+    const d = new Date(createdAt)
+    return (d.getMonth() + 1) <= 6 ? `1º Semestre ${d.getFullYear()}` : `2º Semestre ${d.getFullYear()}`
+  })() : '—')
   sectionTitle(doc, 'Identificação')
   infoRow(doc, [
-    { label: 'Período de Referência', value: c.periodo },
-    { label: 'Data de Elaboração', value: c.data_elaboracao },
+    { label: 'Período de Referência', value: periodoRef },
+    { label: 'Data de Elaboração', value: dataElab },
   ])
 
   sectionTitle(doc, 'Autoavaliação')
@@ -617,13 +636,13 @@ export function generatePdf(input: PdfInput): Promise<Buffer> {
     // Render content
     const c = input.content
     switch (input.type) {
-      case 'plano_de_aula':        renderPlanoDeAula(doc, c, input.createdAt);  break
-      case 'guia_de_aprendizagem': renderGuiaAprendizagem(doc, c);  break
-      case 'pei':                  renderPei(doc, c);               break
-      case 'plano_de_eletiva':     renderPlanoEletiva(doc, c);      break
-      case 'plano_ema':            renderPlanoEma(doc, c);          break
-      case 'projeto':              renderProjeto(doc, c);           break
-      case 'pdi':                  renderPdi(doc, c);               break
+      case 'plano_de_aula':        renderPlanoDeAula(doc, c, input.createdAt);        break
+      case 'guia_de_aprendizagem': renderGuiaAprendizagem(doc, c, input.createdAt);  break
+      case 'pei':                  renderPei(doc, c, input.createdAt);               break
+      case 'plano_de_eletiva':     renderPlanoEletiva(doc, c, input.createdAt);      break
+      case 'plano_ema':            renderPlanoEma(doc, c, input.createdAt);          break
+      case 'projeto':              renderProjeto(doc, c, input.createdAt);           break
+      case 'pdi':                  renderPdi(doc, c, input.createdAt);               break
     }
 
     // Footer on last page only (finishing flag prevents new miniHeader)

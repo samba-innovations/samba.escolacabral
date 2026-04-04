@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, Fragment } from "react";
+import { useState, useEffect, useTransition, Fragment } from "react";
 import { saveDocument, getAulasCurriculo, getSkillsByCodigos } from "@/lib/actions";
 import { toast } from "sonner";
 import { Loader2, Upload, Download, Check, ChevronDown, Calendar } from "lucide-react";
@@ -525,6 +525,55 @@ const DAY_HEADERS = ["D","S","T","Q","Q","S","S"];
 function todayStr() {
   const t = new Date();
   return `${String(t.getDate()).padStart(2,"0")}/${String(t.getMonth()+1).padStart(2,"0")}/${t.getFullYear()}`;
+}
+
+function currentBimestre(): string {
+  const mes = new Date().getMonth() + 1;
+  if (mes <= 3) return "1";
+  if (mes <= 6) return "2";
+  if (mes <= 9) return "3";
+  return "4";
+}
+
+function currentSemestre(): string {
+  const ano = new Date().getFullYear();
+  return (new Date().getMonth() + 1) <= 6 ? `1º Semestre ${ano}` : `2º Semestre ${ano}`;
+}
+
+// Reusable pacotes prontos with auto-suggestion based on technique ID
+function PacotesProntos({
+  tecnicaId,
+  onApply,
+}: {
+  tecnicaId: number | null;
+  onApply: (recursos: string[], avaliacao: string[]) => void;
+}) {
+  const sugestaoId = tecnicaId ? DESENVOLVIMENTO_TO_PACOTE[tecnicaId] : null;
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground mb-2">
+        Início rápido — clique para preencher automaticamente:
+        {sugestaoId && (
+          <span className="ml-1 text-primary font-semibold">sugestão baseada na técnica selecionada</span>
+        )}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {PACOTES_PRONTOS.map((p) => {
+          const sugerido = sugestaoId === p.id;
+          return (
+            <button key={p.id} type="button" onClick={() => onApply(p.recursos, p.avaliacao)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all active:scale-95 ${
+                sugerido
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/30 ring-2 ring-primary/20"
+                  : "border-border/50 bg-background text-foreground hover:border-primary/60 hover:bg-primary/5"
+              }`}>
+              {p.label}{sugerido && " ★"}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -1303,6 +1352,11 @@ function GuiaAprendizagemForm({
   const [estrategiaId, setEstrategiaId] = useState<number | null>(null);
   const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : c.turma ? [c.turma] : [];
 
+  useEffect(() => {
+    if (!c.bimestre) set("bimestre", currentBimestre());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function toggleTurma(name: string) {
     const prev = selectedTurmas;
     const next = prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name];
@@ -1405,6 +1459,8 @@ function GuiaAprendizagemForm({
             </>
           )}
         </Field>
+        <PacotesProntos tecnicaId={estrategiaId}
+          onApply={(r, a) => { set("recursos", r.join(", ")); set("avaliacao", a.join(", ")); }} />
         <Field label="Recursos e materiais">
           <GrupoCheckbox grupos={RECURSOS_GRUPOS} value={c.recursos ?? ""} onChange={(v) => set("recursos", v)} />
         </Field>
@@ -1441,7 +1497,11 @@ function PeiForm({
               onChange={(v) => {
                 set("aluno", v);
                 const s = students.find((st) => st.name === v);
-                if (s) { set("ra_aluno", s.ra); set("turma_aluno", s.className); }
+                if (s) {
+                  set("ra_aluno", s.ra);
+                  set("turma_aluno", s.className);
+                  set("turma", s.className);  // auto-fill turma from student
+                }
               }}
               options={students.map((s) => ({ value: s.name, label: `${s.name} (${s.className})` }))}
               placeholder="Selecione o aluno"
@@ -1510,6 +1570,11 @@ function PlanoEletivaForm({
   const [metodologiaId, setMetodologiaId] = useState<number | null>(null);
   const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : [];
 
+  useEffect(() => {
+    if (!c.semestre) set("semestre", currentSemestre());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function toggleTurma(name: string) {
     const next = selectedTurmas.includes(name) ? selectedTurmas.filter((x) => x !== name) : [...selectedTurmas, name];
     set("turmas", next.join(", "));
@@ -1571,6 +1636,8 @@ function PlanoEletivaForm({
             </>
           )}
         </Field>
+        <PacotesProntos tecnicaId={metodologiaId}
+          onApply={(r, a) => { set("materiais", r.join(", ")); set("avaliacao", a.join(", ")); }} />
         <Field label="Avaliação">
           <GrupoCheckbox grupos={AVALIACAO_GRUPOS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
@@ -1593,6 +1660,11 @@ function PlanoEmaForm({
 }) {
   const [metodologiaId, setMetodologiaId] = useState<number | null>(null);
   const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : [];
+
+  useEffect(() => {
+    if (!c.bimestre) set("bimestre", currentBimestre());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleTurma(name: string) {
     const next = selectedTurmas.includes(name) ? selectedTurmas.filter((x) => x !== name) : [...selectedTurmas, name];
@@ -1652,6 +1724,8 @@ function PlanoEmaForm({
             </>
           )}
         </Field>
+        <PacotesProntos tecnicaId={metodologiaId}
+          onApply={(r, a) => { set("materiais", r.join(", ")); set("avaliacao", a.join(", ")); }} />
         <Field label="Avaliação">
           <GrupoCheckbox grupos={AVALIACAO_GRUPOS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
@@ -1667,16 +1741,29 @@ function ProjetoForm({
   c,
   set,
   classes,
+  disciplines,
 }: {
   c: Record<string, string>;
   set: (k: string, v: string) => void;
   classes: Props["classes"];
+  disciplines: Props["disciplines"];
 }) {
   const selectedTurmas = c.turmas ? c.turmas.split(", ").filter(Boolean) : [];
+  const selectedDiscs = c.disciplinas ? c.disciplinas.split(", ").filter(Boolean) : [];
+
+  useEffect(() => {
+    if (!c.periodo) set("periodo", currentSemestre());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleTurma(name: string) {
     const next = selectedTurmas.includes(name) ? selectedTurmas.filter((x) => x !== name) : [...selectedTurmas, name];
     set("turmas", next.join(", "));
+  }
+
+  function toggleDisc(name: string) {
+    const next = selectedDiscs.includes(name) ? selectedDiscs.filter((x) => x !== name) : [...selectedDiscs, name];
+    set("disciplinas", next.join(", "));
   }
 
   return (
@@ -1698,14 +1785,22 @@ function ProjetoForm({
             })}
           </div>
         </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Período de realização">
-            <TextInput name="periodo" value={c.periodo ?? ""} onChange={(v) => set("periodo", v)} placeholder="Ex: Março a Junho de 2025" />
-          </Field>
-          <Field label="Disciplinas envolvidas">
-            <TextInput name="disciplinas" value={c.disciplinas ?? ""} onChange={(v) => set("disciplinas", v)} placeholder="Ex: Ciências, Português, Matemática" />
-          </Field>
-        </div>
+        <Field label="Período de realização">
+          <TextInput name="periodo" value={c.periodo ?? ""} onChange={(v) => set("periodo", v)} placeholder={`Ex: ${currentSemestre()}`} />
+        </Field>
+        <Field label="Disciplinas envolvidas" hint="Clique para selecionar">
+          <div className="flex flex-wrap gap-2">
+            {disciplines.map((d) => {
+              const sel = selectedDiscs.includes(d.name);
+              return (
+                <button key={d.id} type="button" onClick={() => toggleDisc(d.name)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${sel ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/30" : "bg-background border-border/50 text-foreground hover:border-primary/60 hover:bg-primary/5"}`}>
+                  {d.name}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
       </Section>
 
       <Section title="Proposta">
@@ -1727,6 +1822,8 @@ function ProjetoForm({
         <Field label="Produto final esperado">
           <TextArea name="produto_final" value={c.produto_final ?? ""} onChange={(v) => set("produto_final", v)} placeholder="O que será produzido/entregue? (Cartaz, vídeo, exposição, relatório...)" rows={2} />
         </Field>
+        <PacotesProntos tecnicaId={null}
+          onApply={(_, a) => set("avaliacao", a.join(", "))} />
         <Field label="Avaliação">
           <GrupoCheckbox grupos={AVALIACAO_GRUPOS} value={c.avaliacao ?? ""} onChange={(v) => set("avaliacao", v)} />
         </Field>
@@ -1745,7 +1842,12 @@ function PdiForm({
   c: Record<string, string>;
   set: (k: string, v: string) => void;
 }) {
-  const ANO_LETIVO = new Date().getFullYear().toString();
+  useEffect(() => {
+    if (!c.periodo) set("periodo", currentSemestre());
+    if (!c.data_elaboracao) set("data_elaboracao", todayStr());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
       <Section title="Identificação">
